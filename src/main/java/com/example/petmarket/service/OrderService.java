@@ -1,6 +1,5 @@
 package com.example.petmarket.service;
 
-import com.example.petmarket.dto.GuestCheckoutDto;
 import com.example.petmarket.entity.*;
 import com.example.petmarket.enums.*;
 import com.example.petmarket.repository.OrderRepository;
