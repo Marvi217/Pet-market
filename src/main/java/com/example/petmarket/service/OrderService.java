@@ -1,16 +1,17 @@
 package com.example.petmarket.service;
 
+import com.example.petmarket.dto.GuestCheckoutDto;
 import com.example.petmarket.entity.*;
 import com.example.petmarket.enums.*;
 import com.example.petmarket.repository.OrderRepository;
 import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
@@ -18,21 +19,20 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class OrderService {
 
     private final OrderRepository orderRepository;
 
 
-    public OrderService(OrderRepository orderRepository) {
-        this.orderRepository = orderRepository;
-    }
-
     public Map<String, Double> getMonthlySalesStats() {
         LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
         List<Order> orders = orderRepository.findAllByOrderDateAfter(thirtyDaysAgo);
+
 
         Map<String, Double> stats = new TreeMap<>();
 
@@ -56,7 +56,6 @@ public class OrderService {
         existingOrder.setStatus(details.getStatus());
         existingOrder.setPaymentStatus(details.getPaymentStatus());
         existingOrder.setAdminNotes(details.getAdminNotes());
-
         orderRepository.save(existingOrder);
     }
 
@@ -73,6 +72,7 @@ public class OrderService {
         return orderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Zamówienie o ID " + id + " nie istnieje"));
     }
+
 
     public Page<Order> getUserOrders(Long userId, Pageable pageable) {
         return orderRepository.findByUserId(userId, pageable);
@@ -168,7 +168,6 @@ public class OrderService {
         String paymentNote = String.format("[%s] Status płatności zmieniony na: %s",
                 LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
                 newStatus.name());
-
         order.setAdminNotes(order.getAdminNotes() != null ?
                 order.getAdminNotes() + "\n" + paymentNote : paymentNote);
 
@@ -242,6 +241,7 @@ public class OrderService {
         return revenue != null ? revenue : BigDecimal.ZERO;
     }
 
+
     public Map<String, Double> getWeeklySalesStats() {
         List<Object[]> results = orderRepository.findWeeklySalesRaw();
         Map<String, Double> stats = new LinkedHashMap<>();
@@ -287,4 +287,10 @@ public class OrderService {
 
         log.info("Admin anulował zamówienie {}: {}", orderId, reason);
     }
+
+    public BigDecimal getTotalRevenue() {
+        BigDecimal revenue = orderRepository.sumTotalRevenue();
+        return revenue != null ? revenue : BigDecimal.ZERO;
+    }
+
 }

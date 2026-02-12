@@ -40,7 +40,7 @@ public class AdminDashboardController {
             return "redirect:/";
         }
 
-        model.addAttribute("totalOrders", orderService.getTotalOrdersCount());
+        model.addAttribute("totalOrders", orderService.getTotalOrdersCount(currentUser));
         model.addAttribute("pendingOrders", orderService.getOrdersByStatus(OrderStatus.PENDING).size());
         model.addAttribute("totalRevenue", orderService.getTotalRevenue());
 
