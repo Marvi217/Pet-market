@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Panel Administracyjny PetMarket</title>
+    <link rel="stylesheet" th:href="@{/css/admin-styles.css}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<div class="admin-wrapper">
+    <aside th:replace="~{fragments/admin-fragments :: sidebar('dashboard')}"></aside>
+
+    <main class="admin-main">
+        <div class="admin-content">
+            <div th:if="${success}" class="alert alert-success">
+                <span class="alert-icon">✓</span>
+                <span th:text="${success}">Sukces</span>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon green">💰</div>
+                    <div class="stat-info">
+                        <h3 th:text="${#numbers.formatDecimal(totalRevenue, 1, 2)} + ' zł'">0.00 zł</h3>
+                        <p>Całkowita sprzedaż</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon blue">📦</div>
+                    <div class="stat-info">
+                        <h3 th:text="${totalOrders}">0</h3>
+                        <p>Zamówienia</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon orange">👥</div>
+                    <div class="stat-info">
+                        <h3 th:text="${newUsersThisMonth}">0</h3>
+                        <p>Nowi klienci</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon purple">⭐</div>
+                    <div class="stat-info">
+                        <h3 th:text="${#numbers.formatDecimal(averageRating, 1, 1)}">0.0</h3>
+                        <p>Średnia ocena</p>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 30px;">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">📈 Raport sprzedaży</h2>
+                        <div style="display: flex; gap: 10px;" id="chartActions">
+                            <button class="btn btn-sm btn-secondary" onclick="updateChart('today', this)">Dziś</button>
+                            <button class="btn btn-sm btn-primary" onclick="updateChart('weekly', this)">7 dni</button>
+                            <button class="btn btn-sm btn-secondary" onclick="updateChart('monthly', this)">30 dni</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div style="height: 350px; position: relative;">
+                            <canvas id="salesChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">🏆 Top kategorie</h2>
+                    </div>
+                    <div class="card-body">
+                        <div style="display: flex; flex-direction: column; gap: 15px;">
+                            <div th:each="catStat : ${topCategories}">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                    <span th:text="${catStat.icon + ' ' + catStat.name}">Kategoria</span>
+                                    <strong th:text="${catStat.percentage + '%'}">0%</strong>
+                                </div>
+                                <div style="background: #e5e7eb; height: 8px; border-radius: 4px; overflow: hidden;">
+                                    <div style="background: #10b981; height: 100%;"
+                                         th:styleappend="'width: ' + ${catStat.percentage} + '%'"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">📦 Ostatnie zamówienia</h2>
+                        <a th:href="@{/admin/orders}" class="btn btn-sm btn-secondary">Zobacz wszystkie</a>
+                    </div>
+                    <div class="card-body" style="padding: 0;">
+                        <table class="admin-table">
+                            <thead>
+                            <tr>
+                                <th>Nr</th>
+                                <th>Klient</th>
+                                <th>Data</th>
+                                <th>Wartość</th>
+                                <th>Status</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="order : ${recentOrders}">
+                                <td><strong th:text="'#' + ${order.id}">#0</strong></td>
+                                <td th:text="${order.user.firstName + ' ' + order.user.lastName}">Klient</td>
+                                <td th:text="${#temporals.format(order.orderDate, 'yyyy-MM-dd')}">2026-01-01</td>
+                                <td th:text="${#numbers.formatDecimal(order.totalAmount, 1, 2)} + ' zł'">0.00 zł</td>
+                                <td>
+                                        <span class="badge" th:text="${order.status.displayName}"
+                                              th:classappend="${order.status.name() == 'PAID' ? 'badge-success' : 'badge-warning'}">
+                                            Status
+                                        </span>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">📋 Aktywność</h2>
+                    </div>
+                    <div class="card-body">
+                        <p style="font-size: 14px; color: #666;">Ostatnie logowania i akcje systemowe pojawią się tutaj.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script th:inline="javascript">
+    const weeklyData = /*[[${weeklySales}]]*/ {};
+    const monthlyData = /*[[${monthlySales}]]*/ {};
+    const todayRevenue = /*[[${todayRevenue}]]*/ 0;
+
+    const ctx = document.getElementById('salesChart').getContext('2d');
+    let salesChart;
+
+    const chartConfig = {
+        today: {
+            type: 'bar',
+            labels: ['Dzisiejsza sprzedaż'],
+            data: [todayRevenue]
+        },
+        weekly: {
+            type: 'line',
+            labels: Object.keys(weeklyData),
+            data: Object.values(weeklyData)
+        },
+        monthly: {
+            type: 'line',
+            labels: Object.keys(monthlyData),
+            data: Object.values(monthlyData)
+        }
+    };
+
+    function initChart() {
+        salesChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: chartConfig.weekly.labels,
+                datasets: [{
+                    label: 'Sprzedaż (zł)',
+                    data: chartConfig.weekly.data,
+                    backgroundColor: 'rgba(45, 90, 63, 0.1)',
+                    borderColor: '#2d5a3f',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, ticks: { callback: v => v + ' zł' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    function updateChart(range, btn) {
+        document.querySelectorAll('#chartActions .btn').forEach(b => b.classList.replace('btn-primary', 'btn-secondary'));
+        btn.classList.replace('btn-secondary', 'btn-primary');
+
+        const config = chartConfig[range];
+        salesChart.config.type = config.type;
+        salesChart.data.labels = config.labels;
+        salesChart.data.datasets[0].data = config.data;
+
+        // Ukryj kropki dla widoku miesięcznego, by wykres był czystszy (jak w matplotlib)
+        salesChart.data.datasets[0].pointRadius = range === 'monthly' ? 0 : 4;
+
+        salesChart.update();
+    }
+
+    document.addEventListener('DOMContentLoaded', initChart);
+</script>
+</body>
+</html>

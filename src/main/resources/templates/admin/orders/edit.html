@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Edytuj zamówienie - PetMarket</title>
+    <link rel="stylesheet" th:href="@{/css/admin-styles.css}">
+</head>
+<body>
+<div class="admin-wrapper">
+    <aside th:replace="~{fragments/admin-fragments :: sidebar('orders')}"></aside>
+
+    <main class="admin-main">
+        <div class="admin-content">
+            <div class="page-header">
+                <h1 th:text="'Zarządzaj zamówieniem #' + ${order.orderNumber}"></h1>
+            </div>
+
+            <form th:action="@{/admin/orders/{id}/edit(id=${order.id})}" th:object="${order}" method="post" class="card">
+                <div class="card-body">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                        <div class="form-group">
+                            <label>Status realizacji</label>
+                            <select th:field="*{status}" class="form-control">
+                                <option th:each="s : ${orderStatuses}" th:value="${s}" th:text="${s.displayName}"></option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Status płatności</label>
+                            <select th:field="*{paymentStatus}" class="form-control">
+                                <option th:each="p : ${paymentStatuses}" th:value="${p}" th:text="${p.displayName}"></option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" style="grid-column: span 2;">
+                            <label>Notatki wewnętrzne (niewidoczne dla klienta)</label>
+                            <textarea th:field="*{adminNotes}" class="form-control" rows="4" placeholder="Dodaj uwagi..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer" style="padding: 20px; background: #f9f9f9; border-top: 1px solid #eee;">
+                    <button type="submit" class="btn btn-primary">💾 Zapisz zmiany</button>
+                    <a th:href="@{/admin/orders/{id}(id=${order.id})}" class="btn btn-secondary">Anuluj</a>
+                </div>
+            </form>
+        </div>
+    </main>
+</div>
+</body>
+</html>

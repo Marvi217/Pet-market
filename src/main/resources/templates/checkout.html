@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Podsumowanie zamówienia - PetMarket</title>
+    <style>
+        :root {
+            --brand-green: #2d5a3f;
+            --brand-light: #e9f0ec;
+            --text-dark: #333333;
+            --text-muted: #666666;
+            --border-color: #d1d5db;
+            --bg-light: #f9fafb;
+            --accent-orange: #f97316;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+        }
+
+        .navbar {
+            background: white;
+            padding: 15px 5%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #eee;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .breadcrumb {
+            background: white;
+            padding: 15px 5%;
+            font-size: 14px;
+            color: var(--text-muted);
+            border-bottom: 1px solid #eee;
+        }
+
+        .breadcrumb a { color: var(--text-muted); text-decoration: none; }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        .checkout-layout {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 30px;
+        }
+
+        .section-title {
+            font-size: 28px;
+            margin-bottom: 25px;
+            font-weight: bold;
+            color: var(--brand-green);
+        }
+
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .form-group { margin-bottom: 20px; }
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 15px;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .method-group { margin-bottom: 30px; }
+        .method-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: block;
+            color: var(--brand-green);
+            border-bottom: 2px solid var(--brand-light);
+            padding-bottom: 10px;
+        }
+
+        .option-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .option-item:hover { background-color: var(--brand-light); }
+
+        .address-section {
+            display: none;
+            background: var(--brand-light);
+            padding: 25px;
+            border-radius: 10px;
+            margin: 20px 0 30px 0;
+        }
+
+        .address-section.show { display: block; }
+
+        .address-card-select {
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            background: white;
+            display: flex;
+            align-items: center;
+        }
+
+        .address-card-select.selected {
+            border-color: var(--brand-green);
+            background: #f0fdf4;
+        }
+
+        .address-card-select input[type="radio"] {
+            margin-right: 15px;
+            transform: scale(1.2);
+        }
+
+        .address-label { font-weight: bold; color: var(--brand-green); }
+
+        .new-address-form {
+            display: none;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .new-address-form.show { display: block; }
+
+        .btn-confirm {
+            width: 100%;
+            background-color: var(--brand-green);
+            color: white;
+            padding: 18px;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 18px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--brand-green);
+        }
+    </style>
+</head>
+<body>
+
+<div th:replace="~{fragments/header :: navbar}"></div>
+
+<div class="breadcrumb">
+    <a th:href="@{/}">Strona główna</a> / <a th:href="@{/cart}">Koszyk</a> / Zamówienie
+</div>
+
+<main class="container">
+    <div class="checkout-layout">
+
+        <section>
+            <h2 class="section-title">📝 Dane dostawy i płatności</h2>
+            <div class="card">
+                <form th:action="@{/checkout/process}" method="post" id="checkoutForm">
+
+                    <div class="method-group">
+                        <span class="method-title">🚚 Wybierz sposób dostawy</span>
+                        <label class="option-item">
+                            <input type="radio" name="deliveryMethod" value="COURIER" required checked onchange="showAddressSection(true)">
+                            <div class="option-content">
+                                <strong>Kurier InPost</strong><br>
+                                <small>Dostawa 1-2 dni | 14.99 zł</small>
+                            </div>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="deliveryMethod" value="PACZKOMAT" required onchange="showAddressSection(false)">
+                            <div class="option-content">
+                                <strong>Paczkomat InPost</strong><br>
+                                <small>Odbiór w punkcie | 12.99 zł</small>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div id="addressSection" class="address-section show">
+                        <h3>📍 Adres dostawy</h3>
+
+                        <div th:if="${!savedAddresses.isEmpty()}" class="saved-addresses">
+                            <div th:each="address, iterStat : ${savedAddresses}"
+                                 class="address-card-select"
+                                 th:classappend="${iterStat.first} ? 'selected' : ''"
+                                 onclick="selectAddress(this)">
+
+                                <input type="radio" name="addressId"
+                                       th:value="${address.id}"
+                                       th:checked="${iterStat.first}"
+                                       onclick="event.stopPropagation()">
+
+                                <div class="address-card-content">
+                                    <div class="address-label" th:text="${address.label}">Dom</div>
+                                    <small th:text="${address.name} + ', ' + ${address.street} + ' ' + ${address.city}"></small>
+                                </div>
+                            </div>
+
+                            <button type="button" class="btn-other-address" style="width:100%; padding:10px; cursor:pointer;" onclick="showNewAddressForm()">
+                                + Użyj innego adresu
+                            </button>
+                        </div>
+
+                        <div id="newAddressForm" class="new-address-form" th:classappend="${savedAddresses.isEmpty()} ? 'show' : ''">
+                            <div class="form-group">
+                                <label>Imię i nazwisko *</label>
+                                <input type="text" name="shippingName" placeholder="Jan Kowalski">
+                            </div>
+                            <div class="form-group">
+                                <label>Ulica i numer *</label>
+                                <input type="text" name="shippingStreet" placeholder="ul. Kwiatowa 5">
+                            </div>
+                            <div class="grid-2">
+                                <div class="form-group">
+                                    <label>Kod pocztowy *</label>
+                                    <input type="text" name="shippingZipCode" placeholder="00-001">
+                                </div>
+                                <div class="form-group">
+                                    <label>Miasto *</label>
+                                    <input type="text" name="shippingCity" placeholder="Warszawa">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Telefon *</label>
+                                <input type="tel" name="shippingPhone" placeholder="123456789">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="method-group">
+                        <span class="method-title">💳 Wybierz formę płatności</span>
+                        <label class="option-item">
+                            <input type="radio" name="paymentMethod" value="ONLINE" required checked>
+                            <span>Płatność online (BLIK, Karta)</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="paymentMethod" value="COD" required>
+                            <span>Płatność przy odbiorze</span>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn-confirm">ZAMAWIAM I PŁACĘ</button>
+                </form>
+            </div>
+        </section>
+
+        <aside>
+            <h2 class="section-title">📦 Twoje zamówienie</h2>
+            <div class="card">
+                <div th:each="item : ${cartItems}" class="summary-item">
+                    <span th:text="${item.product.name} + ' x' + ${item.quantity}">Produkt</span>
+                    <span th:text="${#numbers.formatDecimal(item.subtotal, 1, 2)} + ' zł'">0.00</span>
+                </div>
+                <div class="total-row">
+                    <span>Razem:</span>
+                    <span th:text="${#numbers.formatDecimal(total + (total >= 199 ? 0 : 14.99), 1, 2)} + ' zł'">0.00</span>
+                </div>
+            </div>
+        </aside>
+    </div>
+</main>
+
+<script>
+    function showAddressSection(show) {
+        document.getElementById('addressSection').style.display = show ? 'block' : 'none';
+    }
+
+    function selectAddress(element) {
+        // Zaznaczanie wizualne
+        document.querySelectorAll('.address-card-select').forEach(card => card.classList.remove('selected'));
+        element.classList.add('selected');
+
+        // Zaznaczanie radio
+        const radio = element.querySelector('input[type="radio"]');
+        radio.checked = true;
+
+        // Ukrycie nowego formularza i USUNIĘCIE REQUIRED
+        const newForm = document.getElementById('newAddressForm');
+        newForm.classList.remove('show');
+        newForm.querySelectorAll('input').forEach(i => i.removeAttribute('required'));
+    }
+
+    function showNewAddressForm() {
+        const newForm = document.getElementById('newAddressForm');
+        newForm.classList.add('show');
+
+        // Odznaczanie zapisanych
+        document.querySelectorAll('input[name="addressId"]').forEach(r => r.checked = false);
+        document.querySelectorAll('.address-card-select').forEach(c => c.classList.remove('selected'));
+
+        // DODANIE REQUIRED do pól
+        newForm.querySelectorAll('input').forEach(i => {
+            if(i.type !== 'checkbox' && i.type !== 'hidden') i.setAttribute('required', 'required');
+        });
+    }
+
+    // AUTO-START przy załadowaniu strony
+    document.addEventListener('DOMContentLoaded', function() {
+        const firstAddress = document.querySelector('.address-card-select');
+        if (firstAddress) {
+            selectAddress(firstAddress);
+        } else {
+            showNewAddressForm();
+        }
+    });
+</script>
+
+</body>
+</html>

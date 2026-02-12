@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+
+<nav th:fragment="navbar" class="navbar">
+    <a th:href="@{/}" href="/" class="logo">
+        🐾 <span>PetMarket</span>
+    </a>
+
+    <div class="search-container">
+        <form th:action="@{/search}" action="/search" method="get">
+            <label>
+                <input type="text" name="q" placeholder="Szukaj produktów..." required>
+            </label>
+            <button type="submit" class="search-btn">Szukaj</button>
+        </form>
+    </div>
+
+    <div class="nav-icons">
+        <!-- Link dla zalogowanych użytkowników -->
+        <a sec:authorize="isAuthenticated()"
+           th:href="@{/account}"
+           class="nav-link">
+            <span style="font-size: 20px;">👤</span>
+            <span>Konto</span>
+        </a>
+
+        <!-- Link dla niezalogowanych użytkowników -->
+        <a sec:authorize="!isAuthenticated()"
+           th:href="@{/login}"
+           class="nav-link">
+            <span style="font-size: 20px;">👤</span>
+            <span>Zaloguj się</span>
+        </a>
+
+        <a th:href="@{/cart}" class="nav-link">
+            <div style="position: relative; display: inline-block;">
+                🛒
+                <span class="cart-badge"
+                      th:text="${session.cart != null ? session.cart.totalItems : 0}"
+                      th:style="${session.cart == null or session.cart.totalItems == 0} ? 'display: none;' : 'display: flex;'">
+                    0
+                </span>
+            </div>
+            <span>Koszyk</span>
+        </a>
+    </div>
+</nav>
+
+</body>
+</html>

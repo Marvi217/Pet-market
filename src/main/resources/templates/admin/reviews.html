@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments/admin-fragments :: admin-head('Recenzje')}"></head>
+<body>
+<div class="admin-wrapper">
+
+    <main class="admin-main">
+
+        <div class="admin-content">
+            <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+            <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+            <div class="breadcrumb">
+                <a th:href="@{/admin/main/dashboard}">Dashboard</a>
+                <span class="breadcrumb-separator">›</span>
+                <span>Recenzje</span>
+            </div>
+
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">⭐ Recenzje produktów</h1>
+                    <p class="page-subtitle">Moderuj i zarządzaj opiniami klientów</p>
+                </div>
+                <div class="page-actions">
+                    <button class="btn btn-secondary">📥 Eksportuj CSV</button>
+                </div>
+            </div>
+
+            <div class="stats-grid" style="margin-bottom: 25px;">
+                <div class="stat-card">
+                    <div class="stat-icon green">⭐</div>
+                    <div class="stat-info">
+                        <h3 th:text="${totalReviews}">0</h3>
+                        <p>Wszystkie recenzje</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon orange">⏳</div>
+                    <div class="stat-info">
+                        <h3 th:text="${pendingReviews}">0</h3>
+                        <p>Oczekujące</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon blue">✅</div>
+                    <div class="stat-info">
+                        <h3 th:text="${approvedReviews}">0</h3>
+                        <p>Zaakceptowane</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon purple">📊</div>
+                    <div class="stat-info">
+                        <h3 th:text="${averageRating}">0.0</h3>
+                        <p>Średnia ocena</p>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+
+                <div th:each="review : ${reviews.content}" class="card">
+                    <div class="card-body">
+                        <div style="display: flex; gap: 20px;">
+                            <div style="flex-shrink: 0;">
+                                <img th:if="${review.product.imageUrl}" th:src="${review.product.imageUrl}"
+                                     style="width: 80px; height: 80px; border-radius: 8px; object-fit: cover;">
+                                <div th:unless="${review.product.imageUrl}"
+                                     style="width: 80px; height: 80px; background: #eee; display: flex; align-items: center; justify-content: center; border-radius: 8px;">📦</div>
+                            </div>
+
+                            <div style="flex: 1;">
+                                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                                    <div>
+                                        <h3 style="margin: 0; font-size: 16px; font-weight: 600;" th:text="${review.product.name}">Nazwa produktu</h3>
+                                        <small style="color: var(--text-muted);" th:text="${review.product.category.name}">Kategoria</small>
+                                    </div>
+                                    <span class="badge"
+                                          th:classappend="${review.status.name() == 'PENDING' ? 'badge-warning' : (review.status.name() == 'APPROVED' ? 'badge-success' : 'badge-danger')}"
+                                          th:text="${review.status.displayName}">
+                                    </span>
+                                </div>
+
+                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                                    <span style="color: #ffc107;">
+                                        <th:block th:each="i : ${#numbers.sequence(1, 5)}">
+                                            <span th:text="${i <= review.rating ? '⭐' : '☆'}"></span>
+                                        </th:block>
+                                    </span>
+                                    <span style="font-weight: 600;" th:text="${review.rating + '.0'}">5.0</span>
+                                    <span style="color: var(--text-muted);">•</span>
+                                    <span style="color: var(--text-muted);" th:text="${review.user.firstName + ' ' + review.user.lastName}">Użytkownik</span>
+                                    <span style="color: var(--text-muted);">•</span>
+                                    <span style="color: var(--text-muted);" th:text="${#temporals.format(review.createdAt, 'dd.MM.yyyy')}">Data</span>
+                                </div>
+
+                                <p style="margin: 0 0 15px 0; color: var(--text-dark); line-height: 1.6;" th:text="${review.content}">
+                                    Treść recenzji...
+                                </p>
+
+                                <div th:if="${review.adminReply}" style="background: #f8f9fa; padding: 12px; border-radius: 8px; border-left: 3px solid var(--brand-green); margin-bottom: 10px;">
+                                    <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 5px;">
+                                        <strong>Odpowiedź PetMarket:</strong>
+                                    </div>
+                                    <p style="margin: 0; font-size: 14px;" th:text="${review.adminReply}">Dziękujemy za opinię!</p>
+                                </div>
+
+                                <div style="display: flex; gap: 10px;">
+                                    <form th:if="${review.status.name() == 'PENDING'}" th:action="@{/admin/reviews/{id}/approve(id=${review.id})}" method="post">
+                                        <button type="submit" class="btn btn-sm btn-success">✓ Zatwierdź</button>
+                                    </form>
+                                    <form th:if="${review.status.name() == 'PENDING'}" th:action="@{/admin/reviews/{id}/reject(id=${review.id})}" method="post">
+                                        <button type="submit" class="btn btn-sm btn-danger">✗ Odrzuć</button>
+                                    </form>
+                                    <form th:action="@{/admin/reviews/{id}/delete(id=${review.id})}" method="post" onsubmit="return confirm('Czy na pewno usunąć tę opinię?')">
+                                        <button type="submit" class="btn btn-sm btn-danger">🗑️ Usuń</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div th:if="${reviews.totalElements == 0}" class="card">
+                    <div class="card-body text-center">Brak recenzji do wyświetlenia.</div>
+                </div>
+            </div>
+
+            <div class="pagination" style="margin-top: 30px;" th:if="${reviews.totalPages > 1}">
+                <a th:href="@{/admin/reviews(page=${reviews.number - 1})}"
+                   class="pagination-item" th:classappend="${reviews.first ? 'disabled' : ''}">‹ Poprzednia</a>
+
+                <th:block th:each="i : ${#numbers.sequence(0, reviews.totalPages - 1)}">
+                    <a th:href="@{/admin/reviews(page=${i})}"
+                       class="pagination-item" th:classappend="${reviews.number == i ? 'active' : ''}" th:text="${i + 1}">1</a>
+                </th:block>
+
+                <a th:href="@{/admin/reviews(page=${reviews.number + 1})}"
+                   class="pagination-item" th:classappend="${reviews.last ? 'disabled' : ''}">Następna ›</a>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments/admin-fragments :: admin-head('Ustawienia')}"></head>
+<body>
+<div class="admin-wrapper">
+    <aside th:replace="~{admin/fragments/admin-fragments :: sidebar('settings')}"></aside>
+
+    <main class="admin-main">
+        <header th:replace="~{admin/fragments/admin-fragments :: admin-topbar}"></header>
+
+        <div class="admin-content">
+            <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+            <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+            <div class="breadcrumb">
+                <a th:href="@{/admin/main/dashboard}">Dashboard</a>
+                <span class="breadcrumb-separator">›</span>
+                <span>Ustawienia</span>
+            </div>
+
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">⚙️ Ustawienia systemu</h1>
+                    <p class="page-subtitle">Konfiguruj sklep i panel administracyjny</p>
+                </div>
+            </div>
+
+            <div class="tabs">
+                <a href="#general" class="tab-item active">Ogólne</a>
+                <a href="#store" class="tab-item">Sklep</a>
+                <a href="#payments" class="tab-item">Płatności</a>
+                <a href="#shipping" class="tab-item">Dostawa</a>
+                <a href="#email" class="tab-item">Email</a>
+            </div>
+
+            <form th:action="@{/admin/settings/save}" th:object="${settings}" method="post">
+
+                <input type="hidden" th:field="*{id}" />
+
+                <div id="general" class="card" style="margin-bottom: 20px;">
+                    <div class="card-header">
+                        <h2 class="card-title">🏢 Podstawowe informacje</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Nazwa sklepu</label>
+                                <input type="text" class="form-control" th:field="*{storeName}" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Slogan</label>
+                                <input type="text" class="form-control" th:field="*{storeSlogan}">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Email kontaktowy</label>
+                                <input type="email" class="form-control" th:field="*{contactEmail}" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Telefon</label>
+                                <input type="tel" class="form-control" th:field="*{contactPhone}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="store" class="card" style="margin-bottom: 20px;">
+                    <div class="card-header">
+                        <h2 class="card-title">🛒 Parametry zamówień</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Minimalna wartość koszyka (zł)</label>
+                                <input type="number" step="0.01" class="form-control" th:field="*{minOrderValue}">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Darmowa dostawa od (zł)</label>
+                                <input type="number" step="0.01" class="form-control" th:field="*{freeShippingThreshold}">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="checkbox-wrapper">
+                                <input type="checkbox" th:field="*{maintenanceMode}">
+                                <span><strong>Tryb konserwacji</strong> (Sklep będzie niedostępny dla klientów)</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="payments" class="card" style="margin-bottom: 20px;">
+                    <div class="card-header">
+                        <h2 class="card-title">💳 Metody płatności</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="checkbox-wrapper">
+                                <input type="checkbox" th:field="*{payUEnabled}">
+                                <span>Włącz PayU</span>
+                            </label>
+                        </div>
+                        <div class="form-group" th:if="${settings.payUEnabled}">
+                            <label class="form-label">PayU Client ID</label>
+                            <input type="text" class="form-control" th:field="*{payUClientId}">
+                        </div>
+                        <hr>
+                        <div class="form-group">
+                            <label class="checkbox-wrapper">
+                                <input type="checkbox" th:field="*{codEnabled}">
+                                <span>Włącz płatność przy odbiorze</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-footer">
+                        <div style="display: flex; justify-content: flex-end; gap: 12px;">
+                            <a th:href="@{/admin/main/dashboard}" class="btn btn-secondary">Anuluj</a>
+                            <button type="submit" class="btn btn-primary">💾 Zapisz wszystkie ustawienia</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </main>
+</div>
+
+<script>
+    document.querySelectorAll('.tab-item').forEach(tab => {
+        tab.addEventListener('click', (e) => {
+            document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+        });
+    });
+</script>
+</body>
+</html>

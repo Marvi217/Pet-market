@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${product.name} + ' - PetMarket'">Produkt - PetMarket</title>
+    <style>
+        :root {
+            --brand-green: #2d5a3f;
+            --brand-light: #e9f0ec;
+            --text-dark: #333333;
+            --text-muted: #666666;
+            --border-color: #d1d5db;
+            --bg-light: #f9fafb;
+            --accent-orange: #f97316;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+        }
+
+        /* --- NAVIGATION --- */
+        .top-bar {
+            background-color: var(--brand-green);
+            color: white;
+            padding: 8px 5%;
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+        }
+
+        .navbar {
+            background: white;
+            padding: 15px 5%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #eee;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            font-weight: bold;
+            font-size: 24px;
+            color: var(--brand-green);
+            text-decoration: none;
+            gap: 8px;
+        }
+
+        .search-container {
+            flex-grow: 1;
+            max-width: 600px;
+            margin: 0 40px;
+            position: relative;
+        }
+
+        .search-container input {
+            width: 100%;
+            padding: 12px 50px 12px 20px;
+            border-radius: 25px;
+            border: 2px solid var(--border-color);
+            background-color: #fff;
+            outline: none;
+        }
+
+        .search-btn {
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--brand-green);
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+
+        .nav-icons {
+            display: flex;
+            gap: 25px;
+            align-items: center;
+        }
+
+        .nav-link {
+            text-decoration: none;
+            color: var(--text-dark);
+            font-size: 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* --- BREADCRUMB --- */
+        .breadcrumb {
+            background: white;
+            padding: 15px 5%;
+            font-size: 14px;
+            color: var(--text-muted);
+            border-bottom: 1px solid #eee;
+        }
+
+        .breadcrumb a {
+            color: var(--text-muted);
+            text-decoration: none;
+        }
+
+        .breadcrumb a:hover {
+            color: var(--brand-green);
+        }
+
+        /* --- MAIN CONTENT --- */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        /* --- PRODUCT LAYOUT --- */
+        .product-layout {
+            display: grid;
+            grid-template-columns: 500px 1fr;
+            gap: 50px;
+            margin-bottom: 50px;
+        }
+
+        /* --- GALLERY --- */
+        .product-gallery {
+            position: sticky;
+            top: 90px;
+            height: fit-content;
+        }
+
+        .main-image {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 500px;
+            font-size: 200px;
+            border: 1px solid #eee;
+        }
+
+        .thumbnail-gallery {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .thumbnail {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+            font-size: 40px;
+        }
+
+        .thumbnail:hover,
+        .thumbnail.active {
+            border-color: var(--brand-green);
+            background: var(--brand-light);
+        }
+
+        /* --- PRODUCT INFO --- */
+        .product-info {
+            background: white;
+            border-radius: 15px;
+            padding: 35px;
+        }
+
+        .product-badge {
+            display: inline-block;
+            background: var(--accent-orange);
+            color: white;
+            padding: 6px 15px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .product-title {
+            font-size: 32px;
+            font-weight: 700;
+            margin: 0 0 15px 0;
+            color: var(--text-dark);
+            line-height: 1.3;
+        }
+
+        .product-rating {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 25px;
+            padding-bottom: 25px;
+            border-bottom: 2px solid var(--bg-light);
+        }
+
+        .stars {
+            position: relative;
+            display: inline-block;
+            color: #ddd;
+        }
+
+        .filled-stars {
+            position: absolute;
+            top: 0;
+            left: 0;
+            overflow: hidden;
+            color: #fbbf24;
+        }
+
+        .empty-stars {
+            color: #ddd;
+        }
+
+        .rating-score {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .rating-count {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .rating-count a {
+            color: var(--brand-green);
+            text-decoration: none;
+        }
+
+        /* --- PRICE --- */
+        .price-section {
+            background: var(--bg-light);
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+
+        .old-price {
+            font-size: 20px;
+            color: var(--text-muted);
+            text-decoration: line-through;
+            margin-bottom: 5px;
+        }
+
+        .current-price {
+            font-size: 42px;
+            font-weight: bold;
+            color: var(--brand-green);
+            margin-bottom: 10px;
+        }
+
+        .price-info {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .savings {
+            color: var(--accent-orange);
+            font-weight: 600;
+        }
+
+        /* --- AVAILABILITY --- */
+        .availability {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px;
+            background: #ecfdf5;
+            border-radius: 10px;
+            margin-bottom: 25px;
+        }
+
+        .availability.in-stock {
+            background: #ecfdf5;
+            color: #065f46;
+        }
+
+        .availability.low-stock {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .availability-icon {
+            font-size: 24px;
+        }
+
+        .availability-text {
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        /* --- QUANTITY & ADD TO CART --- */
+        .purchase-section {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .quantity-selector {
+            display: flex;
+            align-items: center;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .quantity-btn {
+            background: white;
+            border: none;
+            padding: 15px 20px;
+            font-size: 20px;
+            cursor: pointer;
+            color: var(--brand-green);
+            transition: background 0.3s;
+        }
+
+        .quantity-btn:hover {
+            background: var(--bg-light);
+        }
+
+        .quantity-input {
+            border: none;
+            width: 60px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: 600;
+            padding: 15px 0;
+        }
+
+        .btn-add-to-cart {
+            flex-grow: 1;
+            background: var(--brand-green);
+            color: white;
+            border: none;
+            padding: 18px 35px;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-add-to-cart:hover {
+            background: #1e4230;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        /* --- DELIVERY INFO --- */
+        .delivery-info {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            padding: 25px 0;
+            border-top: 2px solid var(--bg-light);
+            border-bottom: 2px solid var(--bg-light);
+            margin-bottom: 30px;
+        }
+
+        .delivery-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .delivery-icon {
+            font-size: 28px;
+        }
+
+        .delivery-text {
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .delivery-text strong {
+            display: block;
+            color: var(--text-dark);
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        /* --- TABS --- */
+        .product-tabs {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 40px;
+        }
+
+        .tab-header {
+            display: flex;
+            border-bottom: 2px solid var(--bg-light);
+        }
+
+        .tab-btn {
+            flex: 1;
+            background: none;
+            border: none;
+            padding: 20px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--text-muted);
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab-btn:hover {
+            color: var(--brand-green);
+        }
+
+        .tab-btn.active {
+            color: var(--brand-green);
+            border-bottom-color: var(--brand-green);
+        }
+
+        .tab-content {
+            padding: 35px;
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .tab-content h3 {
+            font-size: 20px;
+            margin: 0 0 20px 0;
+            color: var(--text-dark);
+        }
+
+        .tab-content p {
+            line-height: 1.8;
+            color: var(--text-dark);
+            margin-bottom: 15px;
+        }
+
+        .tab-content ul {
+            line-height: 1.8;
+            color: var(--text-dark);
+        }
+
+        .specifications {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .spec-item {
+            display: flex;
+            padding: 15px;
+            background: var(--bg-light);
+            border-radius: 8px;
+        }
+
+        .spec-label {
+            font-weight: 600;
+            color: var(--text-dark);
+            min-width: 150px;
+        }
+
+        .spec-value {
+            color: var(--text-muted);
+        }
+
+        /* --- REVIEWS --- */
+        .review-summary {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            gap: 40px;
+            margin-bottom: 40px;
+            padding-bottom: 30px;
+            border-bottom: 2px solid var(--bg-light);
+        }
+
+        .overall-rating {
+            text-align: center;
+        }
+
+        .overall-score {
+            font-size: 64px;
+            font-weight: bold;
+            color: var(--brand-green);
+            line-height: 1;
+            margin-bottom: 10px;
+        }
+
+        .overall-stars {
+            font-size: 24px;
+            color: #fbbf24;
+            margin-bottom: 10px;
+        }
+
+        .rating-bars {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .rating-bar-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .bar-label {
+            font-size: 14px;
+            color: var(--text-muted);
+            min-width: 60px;
+        }
+
+        .bar {
+            flex-grow: 1;
+            height: 8px;
+            background: var(--bg-light);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            background: #fbbf24;
+            border-radius: 10px;
+        }
+
+        .bar-count {
+            font-size: 14px;
+            color: var(--text-muted);
+            min-width: 40px;
+            text-align: right;
+        }
+
+        .review-item {
+            padding: 25px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .reviewer-name {
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        .review-date {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .review-stars {
+            color: #fbbf24;
+            margin-bottom: 10px;
+        }
+
+        .review-text {
+            line-height: 1.6;
+            color: var(--text-dark);
+        }
+
+        /* --- RELATED PRODUCTS --- */
+        .related-products {
+            margin-top: 60px;
+        }
+
+        .section-title {
+            font-size: 28px;
+            font-weight: bold;
+            margin: 0 0 30px 0;
+            color: var(--brand-green);
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 20px;
+        }
+
+        .product-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            text-decoration: none;
+            color: var(--text-dark);
+            transition: all 0.3s;
+            border: 1px solid #eee;
+        }
+
+        .product-card:hover {
+            box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+            transform: translateY(-3px);
+        }
+
+        .product-card-image {
+            width: 100%;
+            height: 180px;
+            background: #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 70px;
+        }
+
+        .product-card-info {
+            padding: 15px;
+        }
+
+        .product-card-name {
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0 0 10px 0;
+            height: 40px;
+            overflow: hidden;
+        }
+
+        .product-card-price {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--brand-green);
+        }
+
+        /* --- FOOTER --- */
+        footer {
+            background: var(--text-dark);
+            color: white;
+            padding: 40px 5%;
+            text-align: center;
+            margin-top: 80px;
+        }
+
+        /* --- RESPONSIVE --- */
+        @media (max-width: 968px) {
+            .product-layout {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+
+            .main-image {
+                height: 350px;
+                font-size: 120px;
+            }
+
+            .product-title {
+                font-size: 24px;
+            }
+
+            .current-price {
+                font-size: 32px;
+            }
+
+            .purchase-section {
+                flex-direction: column;
+            }
+
+            .delivery-info {
+                grid-template-columns: 1fr;
+            }
+
+            .review-summary {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .specifications {
+                grid-template-columns: 1fr;
+            }
+
+            .search-container {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+<div th:replace="~{fragments/header :: navbar}"></div>
+<!-- BREADCRUMB -->
+<div class="breadcrumb">
+    <a th:href="@{/}">Strona główna</a> /
+    <a th:href="@{/category/{slug}(slug=${product.category.slug})}" th:text="${product.category.name}">Kategoria</a> /
+    <span th:text="${product.name}">Produkt</span>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="container">
+
+    <div class="product-layout">
+
+        <!-- GALLERY -->
+        <div class="product-gallery">
+            <div class="main-image" id="mainImage" th:text="${product.imageUrl}">🦴</div>
+            <div class="thumbnail-gallery">
+                <div class="thumbnail active" th:text="${product.imageUrl}">🦴</div>
+                <div class="thumbnail">📦</div>
+                <div class="thumbnail">🍖</div>
+                <div class="thumbnail">📊</div>
+            </div>
+        </div>
+
+        <!-- PRODUCT INFO -->
+        <div class="product-info">
+            <div class="product-badge" th:if="${product.hasDiscount}" th:text="'-' + ${product.discountPercent} + '%'">-25%</div>
+
+            <h1 class="product-title" th:text="${product.name}">
+                Karma sucha dla psa Royal Canin Medium Adult 15kg
+            </h1>
+
+            <div class="product-rating">
+                <span class="stars">
+                    <span class="filled-stars" th:style="'width: ' + ${starHelper.getFilledStarsWidth(product.rating)}">★★★★★</span>
+                    <span class="empty-stars">★★★★★</span>
+                </span>
+                <span class="rating-score" th:text="${#numbers.formatDecimal(product.rating, 1, 1)}">4.8</span>
+                <span class="rating-count">
+                    <a href="#reviews" th:text="'(' + ${product.reviewCount} + ' opinii)'">(124 opinii)</a>
+                </span>
+            </div>
+
+            <!-- PRICE -->
+            <div class="price-section">
+                <div class="old-price" th:if="${product.hasDiscount}" th:text="${#numbers.formatDecimal(product.oldPrice, 1, 2)} + ' zł'">
+                    252.00 zł
+                </div>
+                <div class="current-price" th:text="${#numbers.formatDecimal(product.price, 1, 2)} + ' zł'">
+                    189.00 zł
+                </div>
+                <div class="price-info">
+                    <span class="savings" th:if="${product.hasDiscount}">
+                        Oszczędzasz <span th:text="${#numbers.formatDecimal(product.oldPrice - product.price, 1, 2)}">63</span> zł!
+                    </span>
+                    <span th:unless="${product.hasDiscount}">Najlepsza cena w ostatnich 30 dniach</span>
+                </div>
+            </div>
+
+            <!-- AVAILABILITY -->
+            <div class="availability" th:classappend="${product.available ? 'in-stock' : 'low-stock'}">
+                <span class="availability-icon">✓</span>
+                <span class="availability-text" th:text="${product.available ? 'Dostępny - wysyłka w 24h' : 'Tymczasowo niedostępny'}">Dostępny - wysyłka w 24h</span>
+            </div>
+
+            <!-- PURCHASE SECTION -->
+            <form th:action="@{/cart/add}" method="post" style="display: inline;">
+                <input type="hidden" name="productId" th:value="${product.id}">
+                <div class="purchase-section">
+                    <div class="quantity-selector">
+                        <button type="button" class="quantity-btn" onclick="decreaseQty()">−</button>
+                        <input type="number" class="quantity-input" id="quantity" name="quantity" value="1" min="1" max="10">
+                        <button type="button" class="quantity-btn" onclick="increaseQty()">+</button>
+                    </div>
+                    <button type="submit" class="btn-add-to-cart">
+                        <span style="font-size: 20px;">🛒</span>
+                        <span>Dodaj do koszyka</span>
+                    </button>
+                </div>
+            </form>
+
+            <!-- DELIVERY INFO -->
+            <div class="delivery-info">
+                <div class="delivery-item">
+                    <span class="delivery-icon">🚚</span>
+                    <div class="delivery-text">
+                        <strong>Darmowa dostawa</strong>
+                        <span>od 199 zł</span>
+                    </div>
+                </div>
+                <div class="delivery-item">
+                    <span class="delivery-icon">📦</span>
+                    <div class="delivery-text">
+                        <strong>Wysyłka w 24h</strong>
+                        <span>Zamów do 15:00</span>
+                    </div>
+                </div>
+                <div class="delivery-item">
+                    <span class="delivery-icon">🔄</span>
+                    <div class="delivery-text">
+                        <strong>30 dni na zwrot</strong>
+                        <span>Bez pytań</span>
+                    </div>
+                </div>
+                <div class="delivery-item">
+                    <span class="delivery-icon">💳</span>
+                    <div class="delivery-text">
+                        <strong>Bezpieczne płatności</strong>
+                        <span>SSL & 3D Secure</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="product-tabs">
+        <div class="tab-header">
+            <button class="tab-btn active" onclick="switchTab(0)">Opis</button>
+            <button class="tab-btn" onclick="switchTab(1)">Specyfikacja</button>
+            <button class="tab-btn" onclick="switchTab(2)">Składniki</button>
+            <button class="tab-btn" onclick="switchTab(3)" id="reviews">
+                Opinie (<span th:text="${product.reviewCount}">124</span>)
+            </button>
+        </div>
+
+        <!-- DESCRIPTION TAB -->
+        <div class="tab-content active">
+            <h3>Opis produktu</h3>
+            <div th:utext="${product.description}">
+                <p>
+                    Royal Canin Medium Adult to kompletna i zbilansowana karma sucha, specjalnie opracowana dla psów dorosłych ras średnich (od 11 do 25 kg) w wieku od 12 miesięcy do 7 lat.
+                </p>
+                <p>
+                    Karma zawiera optymalną równowagę składników odżywczych dostosowaną do potrzeb psów średnich ras. Wyjątkowy kompleks przeciwutleniaczy wspiera naturalne mechanizmy obronne organizmu, a odpowiednia zawartość białka pomaga utrzymać prawidłową masę mięśniową.
+                </p>
+            </div>
+        </div>
+
+        <!-- SPECIFICATION TAB -->
+        <div class="tab-content">
+            <h3>Specyfikacja techniczna</h3>
+            <div class="specifications">
+                <div class="spec-item">
+                    <span class="spec-label">Marka:</span>
+                    <span class="spec-value" th:text="${product.brand?.name}">Royal Canin</span>
+                </div>
+                <div class="spec-item">
+                    <span class="spec-label">Kategoria:</span>
+                    <span class="spec-value" th:text="${product.category?.name}">Karma</span>
+                </div>
+                <div class="spec-item" th:if="${product.weight != null}">
+                    <span class="spec-label">Waga:</span>
+                    <span class="spec-value" th:text="${product.weight}">15 kg</span>
+                </div>
+                <div class="spec-item">
+                    <span class="spec-label">Dostępność:</span>
+                    <span class="spec-value" th:text="${product.available ? 'Dostępny' : 'Niedostępny'}">Dostępny</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- INGREDIENTS TAB -->
+        <div class="tab-content">
+            <h3>Składniki</h3>
+            <div th:utext="${product.ingredients}">
+                <p>
+                    <strong>Składniki:</strong> Drób (mąka z kurczaka, tłuszcz drobiowy), ryż, kukurydza, hydrolizat białek zwierzęcych...
+                </p>
+            </div>
+        </div>
+
+        <!-- REVIEWS TAB -->
+        <div class="tab-content">
+            <h3>Opinie klientów</h3>
+
+            <div class="review-summary" th:if="${product.reviewCount > 0}">
+                <div class="overall-rating">
+                    <div class="overall-score" th:text="${#numbers.formatDecimal(product.rating, 1, 1)}">4.8</div>
+                    <div class="overall-stars">★★★★★</div>
+                    <div>Na podstawie <span th:text="${product.reviewCount}">124</span> opinii</div>
+                </div>
+
+                <div class="rating-bars">
+                    <div class="rating-bar-item">
+                        <span class="bar-label">5 gwiazdek</span>
+                        <div class="bar">
+                            <div class="bar-fill" style="width: 85%;"></div>
+                        </div>
+                        <span class="bar-count">105</span>
+                    </div>
+                    <div class="rating-bar-item">
+                        <span class="bar-label">4 gwiazdki</span>
+                        <div class="bar">
+                            <div class="bar-fill" style="width: 10%;"></div>
+                        </div>
+                        <span class="bar-count">12</span>
+                    </div>
+                    <div class="rating-bar-item">
+                        <span class="bar-label">3 gwiazdki</span>
+                        <div class="bar">
+                            <div class="bar-fill" style="width: 3%;"></div>
+                        </div>
+                        <span class="bar-count">4</span>
+                    </div>
+                    <div class="rating-bar-item">
+                        <span class="bar-label">2 gwiazdki</span>
+                        <div class="bar">
+                            <div class="bar-fill" style="width: 1%;"></div>
+                        </div>
+                        <span class="bar-count">2</span>
+                    </div>
+                    <div class="rating-bar-item">
+                        <span class="bar-label">1 gwiazdka</span>
+                        <div class="bar">
+                            <div class="bar-fill" style="width: 1%;"></div>
+                        </div>
+                        <span class="bar-count">1</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reviews list -->
+            <div th:each="review : ${reviews}" class="review-item">
+                <div class="review-header">
+                    <span class="reviewer-name" th:text="${review.user.name}">Anna K.</span>
+                    <span class="review-date" th:text="${#temporals.format(review.createdAt, 'dd MMMM yyyy')}">15 stycznia 2025</span>
+                </div>
+                <div class="review-stars" th:text="${'★'.repeat(review.rating) + '☆'.repeat(5 - review.rating)}">★★★★★</div>
+                <p class="review-text" th:text="${review.comment}">Świetna karma!</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- RELATED PRODUCTS -->
+    <section class="related-products" th:if="${relatedProducts != null and !relatedProducts.isEmpty()}">
+        <h2 class="section-title">Podobne produkty</h2>
+        <div class="products-grid">
+            <a th:each="prod : ${relatedProducts}"
+               th:href="@{/product/{id}(id=${prod.id})}"
+               class="product-card">
+                <div class="product-card-image" th:text="${prod.imageUrl}">🦴</div>
+                <div class="product-card-info">
+                    <h3 class="product-card-name" th:text="${prod.name}">Produkt</h3>
+                    <div class="product-card-price" th:text="${#numbers.formatDecimal(prod.price, 1, 2)} + ' zł'">0.00 zł</div>
+                </div>
+            </a>
+        </div>
+    </section>
+
+</div>
+
+<!-- FOOTER -->
+<footer>
+    <p>&copy; 2026 PetMarket - Wszystkie prawa zastrzeżone</p>
+</footer>
+
+<script>
+    // Quantity controls
+    function increaseQty() {
+        const input = document.getElementById('quantity');
+        const currentValue = parseInt(input.value);
+        if (currentValue < parseInt(input.max)) {
+            input.value = currentValue + 1;
+        }
+    }
+
+    function decreaseQty() {
+        const input = document.getElementById('quantity');
+        const currentValue = parseInt(input.value);
+        if (currentValue > parseInt(input.min)) {
+            input.value = currentValue - 1;
+        }
+    }
+
+    // Tab switching
+    function switchTab(index) {
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabBtns.forEach((btn, i) => {
+            if (i === index) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+
+        tabContents.forEach((content, i) => {
+            if (i === index) {
+                content.classList.add('active');
+            } else {
+                content.classList.remove('active');
+            }
+        });
+    }
+
+    // Thumbnail gallery
+    document.querySelectorAll('.thumbnail').forEach((thumb, index) => {
+        thumb.addEventListener('click', function() {
+            document.querySelectorAll('.thumbnail').forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            document.getElementById('mainImage').textContent = this.textContent;
+        });
+    });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wystąpił błąd - PetMarket</title>
+    <style>
+        :root {
+            --brand-green: #2d5a3f;
+            --brand-light: #e9f0ec;
+            --text-dark: #333333;
+            --text-muted: #666666;
+            --bg-light: #f9fafb;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background-color: var(--bg-light);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: var(--text-dark);
+        }
+
+        .error-card {
+            background: white;
+            padding: 50px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .error-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: var(--brand-green);
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        p {
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .error-details {
+            background: #fff5f5;
+            color: #c53030;
+            padding: 10px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 13px;
+            margin-bottom: 30px;
+            border: 1px solid #feb2b2;
+        }
+
+        .btn-back {
+            display: inline-block;
+            background-color: var(--brand-green);
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+
+        .btn-back:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+
+<div class="error-card">
+    <div class="error-icon">🦴</div>
+    <h1>Ups! Coś poszło nie tak...</h1>
+
+    <div style="text-align: center; margin-top: 50px;">
+        <h1 style="color: red;">403 - Odmowa dostępu</h1>
+        <p>Niestety, Twoje uprawnienia są niewystarczające, aby zobaczyć tę stronę.</p>
+    </div>
+
+    <a th:href="@{/static}" class="btn-back">Wróć na stronę główną</a>
+</div>
+
+</body>
+</html>

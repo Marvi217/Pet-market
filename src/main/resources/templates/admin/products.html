@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Produkty - Panel Administracyjny PetMarket</title>
+    <link rel="stylesheet" th:href="@{/css/admin-styles.css}">
+</head>
+<body>
+<div class="admin-wrapper">
+    <div th:replace="~{fragments/admin-fragments :: sidebar('products')}"></div>
+
+    <main class="admin-main">
+        <div class="admin-content">
+            <div class="breadcrumb">
+                <a th:href="@{/admin}">Dashboard</a>
+                <span class="breadcrumb-separator">›</span>
+                <span>Produkty</span>
+            </div>
+
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">🛍️ Produkty</h1>
+                    <p class="page-subtitle">Zarządzaj katalogiem produktów sklepu</p>
+                </div>
+                <div class="page-actions">
+                    <a th:href="@{/admin/products/export}" class="btn btn-outline">📥 Eksportuj CSV</a>
+                    <a th:href="@{/admin/products/new}" class="btn btn-primary">+ Dodaj produkt</a>
+                </div>
+            </div>
+
+            <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+            <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+            <div class="stats-grid" style="margin-bottom: 20px;">
+                <div class="stat-card">
+                    <div class="stat-icon green">🛍️</div>
+                    <div class="stat-info">
+                        <h3 th:text="${totalItems}">0</h3>
+                        <p>Wszystkich produktów</p>
+                    </div>
+                </div>
+            </div>
+
+            <form th:action="@{/admin/products}" method="get" class="filter-bar">
+                <input type="text" name="search" class="form-control" placeholder="Szukaj po nazwie, SKU..." th:value="${search}">
+
+                <select name="categoryId" class="form-control">
+                    <option value="">Wszystkie kategorie</option>
+                    <option th:each="cat : ${categories}"
+                            th:value="${cat.id}"
+                            th:text="${cat.name}"
+                            th:selected="${cat.id == selectedCategoryId}"></option>
+                </select>
+
+                <select name="brandId" class="form-control">
+                    <option value="">Wszystkie marki</option>
+                    <option th:each="brand : ${brands}"
+                            th:value="${brand.id}"
+                            th:text="${brand.name}"
+                            th:selected="${brand.id == selectedBrandId}"></option>
+                </select>
+
+                <select name="status" class="form-control">
+                    <option value="">Wszystkie statusy</option>
+                    <option th:each="st : ${statuses}"
+                            th:value="${st}"
+                            th:text="${st}"
+                            th:selected="${st == selectedStatus}"></option>
+                </select>
+
+                <button type="submit" class="btn btn-primary">Filtruj</button>
+                <a th:href="@{/admin/products}" class="btn btn-secondary">Resetuj</a>
+            </form>
+
+            <div class="card">
+                <div class="card-body" style="padding: 0;">
+                    <div class="table-container">
+                        <table class="admin-table">
+                            <thead>
+                            <tr>
+                                <th class="checkbox-col"><input type="checkbox" id="selectAll"></th>
+                                <th style="width: 60px;">Ikona</th>
+                                <th>Nazwa</th>
+                                <th>SKU</th>
+                                <th>Kategoria</th>
+                                <th>Marka</th>
+                                <th>Cena</th>
+                                <th>Stan</th>
+                                <th>Status</th>
+                                <th class="actions-col">Akcje</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:if="${products == null || products.isEmpty()}">
+                                <td colspan="10" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                                    Brak produktów do wyświetlenia
+                                </td>
+                            </tr>
+
+                            <tr th:each="product : ${products.content}" th:unless="${products == null || products.isEmpty()}">
+                                <td class="checkbox-col">
+                                    <input type="checkbox" name="selectedProducts" th:value="${product.id}">
+                                </td>
+                                <td>
+                                    <div class="product-icon-mini" style="font-size: 24px;">
+                                        <span th:if="${product.subcategory != null && product.subcategory.category != null && product.subcategory.category.icon != null}"
+                                              th:text="${product.subcategory.category.icon}">🦴</span>
+                                        <span th:unless="${product.subcategory != null && product.subcategory.category != null && product.subcategory.category.icon != null}">🦴</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <strong th:text="${product.name}">Nazwa produktu</strong>
+                                    <br>
+                                    <small style="color: var(--text-muted);"
+                                           th:text="${product.subcategory != null ? product.subcategory.name : 'Brak'}">Podkategoria</small>
+                                </td>
+                                <td>
+                                    <code th:text="${product.sku != null && !product.sku.isEmpty() ? product.sku : 'N/A'}">SKU</code>
+                                </td>
+                                <td th:text="${product.subcategory != null && product.subcategory.category != null ? product.subcategory.category.name : 'Brak'}">Kategoria</td>
+                                <td th:text="${product.brand != null ? product.brand.name : 'Brak'}">Marka</td>
+                                <td>
+                                    <div th:if="${product.discountedPrice != null}">
+                                        <span style="text-decoration: line-through; color: var(--text-muted);"
+                                              th:text="${#numbers.formatDecimal(product.price, 1, 2)} + ' zł'"></span>
+                                        <br>
+                                        <strong style="color: var(--accent-orange);"
+                                                th:text="${#numbers.formatDecimal(product.discountedPrice, 1, 2)} + ' zł'"></strong>
+                                    </div>
+                                    <div th:unless="${product.discountedPrice != null}">
+                                        <strong th:text="${#numbers.formatDecimal(product.price, 1, 2)} + ' zł'"></strong>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge"
+                                          th:classappend="${product.stockQuantity <= 5} ? 'badge-danger' : 'badge-success'"
+                                          th:text="${product.stockQuantity} + ' szt.'"></span>
+                                </td>
+                                <td>
+                                    <span class="badge"
+                                          th:classappend="${product.status.name() == 'ACTIVE'} ? 'badge-success' : 'badge-danger'"
+                                          th:text="${product.status}"></span>
+                                </td>
+                                <td class="actions-col">
+                                    <div class="action-buttons">
+                                        <a th:href="@{/admin/products/{id}/edit(id=${product.id})}"
+                                           class="action-btn edit" title="Edytuj">✏️</a>
+                                        <a th:href="@{/admin/products/{id}/images(id=${product.id})}"
+                                           class="action-btn view" title="Zdjęcia">🖼️</a>
+                                        <form th:action="@{/admin/products/{id}/delete(id=${product.id})}"
+                                              method="post"
+                                              style="display: inline;"
+                                              onsubmit="return confirm('Czy na pewno chcesz usunąć ten produkt?')">
+                                            <button type="submit" class="action-btn delete" title="Usuń">🗑️</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card-footer" th:if="${totalPages > 1}">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span th:text="'Strona ' + (${currentPage + 1}) + ' z ' + ${totalPages}"></span>
+                        <div class="pagination">
+                            <a th:href="@{/admin/products(page=${currentPage - 1}, search=${search}, categoryId=${selectedCategoryId}, brandId=${selectedBrandId}, status=${selectedStatus})}"
+                               th:classappend="${currentPage == 0} ? 'disabled'"
+                               class="pagination-item">← Poprzednia</a>
+
+                            <a th:href="@{/admin/products(page=${currentPage + 1}, search=${search}, categoryId=${selectedCategoryId}, brandId=${selectedBrandId}, status=${selectedStatus})}"
+                               th:classappend="${currentPage + 1 >= totalPages} ? 'disabled'"
+                               class="pagination-item">Następna →</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    document.getElementById('selectAll').addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('tbody input[type="checkbox"]');
+        checkboxes.forEach(cb => cb.checked = this.checked);
+    });
+</script>
+</body>
+</html>

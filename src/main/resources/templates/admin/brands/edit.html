@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <title>Edytuj markę - Panel Administracyjny PetMarket</title>
+    <link rel="stylesheet" href="/css/admin-styles.css">
+</head>
+<body>
+<div class="admin-wrapper">
+    <!-- SIDEBAR -->
+    <aside th:replace="~{fragments/admin-fragments :: sidebar('brands')}"></aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="admin-main">
+        <!-- PAGE CONTENT -->
+        <div class="admin-content">
+            <!-- BREADCRUMB -->
+            <div class="breadcrumb">
+                <a th:href="@{/admin/main/dashboard}">Dashboard</a>
+                <span class="breadcrumb-separator">›</span>
+                <a th:href="@{/admin/brands}">Marki</a>
+                <span class="breadcrumb-separator">›</span>
+                <span>Edytuj markę</span>
+            </div>
+
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">Edytuj markę</h1>
+                    <p class="page-subtitle">Edytuj szczegóły marki "<span th:text="${brand.name}"></span>"</p>
+                </div>
+                <div class="page-actions">
+                    <a th:href="@{/admin/brands}" class="btn btn-secondary">← Powrót do listy marek</a>
+                </div>
+            </div>
+
+            <!-- ALERTS -->
+            <div th:if="${success}" class="alert alert-success">
+                <span class="alert-icon">✅</span>
+                <span th:text="${success}">Operacja zakończona pomyślnie</span>
+            </div>
+
+            <div th:if="${error}" class="alert alert-error">
+                <span class="alert-icon">❌</span>
+                <span th:text="${error}">Wystąpił błąd</span>
+            </div>
+
+            <!-- VALIDATION ERRORS -->
+            <div th:if="${#fields.hasErrors('*')}" class="alert alert-error">
+                <span class="alert-icon">❌</span>
+                <div>
+                    <strong>Formularz zawiera błędy:</strong>
+                    <ul style="margin: 5px 0 0 20px;">
+                        <li th:each="err : ${#fields.errors('*')}" th:text="${err}">Błąd walidacji</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- FORM -->
+            <form th:action="@{/admin/brands/edit/{id}(id=${brandDTO.id})}"
+                  method="post"
+                  th:object="${brandDTO}"
+                  enctype="multipart/form-data">
+
+                <input type="hidden" th:field="*{id}">
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Podstawowe informacje</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-grid">
+                            <!-- Nazwa marki -->
+                            <div class="form-group">
+                                <label for="name" class="form-label required">Nazwa marki</label>
+                                <input type="text"
+                                       id="name"
+                                       th:field="*{name}"
+                                       class="form-control"
+                                       th:classappend="${#fields.hasErrors('name')} ? 'is-invalid' : ''"
+                                       placeholder="np. Royal Canin, Purina, Hill's"
+                                       required>
+                                <span th:if="${#fields.hasErrors('name')}"
+                                      th:errors="*{name}"
+                                      class="error-message">Błąd</span>
+                            </div>
+
+                            <!-- Kraj -->
+                            <div class="form-group">
+                                <label for="country" class="form-label">Kraj pochodzenia</label>
+                                <input type="text"
+                                       id="country"
+                                       th:field="*{country}"
+                                       class="form-control"
+                                       th:classappend="${#fields.hasErrors('country')} ? 'is-invalid' : ''"
+                                       placeholder="np. Francja, USA, Polska">
+                                <span th:if="${#fields.hasErrors('country')}"
+                                      th:errors="*{country}"
+                                      class="error-message">Błąd</span>
+                            </div>
+
+                            <!-- Opis -->
+                            <div class="form-group full-width">
+                                <label for="description" class="form-label">Opis marki</label>
+                                <textarea id="description"
+                                          th:field="*{description}"
+                                          class="form-control"
+                                          th:classappend="${#fields.hasErrors('description')} ? 'is-invalid' : ''"
+                                          rows="4"
+                                          placeholder="Krótki opis marki, jej historia, wartości..."></textarea>
+                                <span th:if="${#fields.hasErrors('description')}"
+                                      th:errors="*{description}"
+                                      class="error-message">Błąd</span>
+                            </div>
+
+                            <!-- Strona internetowa -->
+                            <div class="form-group">
+                                <label for="website" class="form-label">Strona internetowa</label>
+                                <input type="url"
+                                       id="website"
+                                       th:field="*{website}"
+                                       class="form-control"
+                                       th:classappend="${#fields.hasErrors('website')} ? 'is-invalid' : ''"
+                                       placeholder="https://www.przyklad.pl">
+                                <small class="form-text">Pełny adres URL strony marki</small>
+                                <span th:if="${#fields.hasErrors('website')}"
+                                      th:errors="*{website}"
+                                      class="error-message">Błąd</span>
+                            </div>
+
+                            <!-- Status aktywności -->
+                            <div class="form-group">
+                                <label class="form-label">Status</label>
+                                <div class="form-check">
+                                    <label class="switch">
+                                        <input type="checkbox" th:field="*{active}">
+                                        <span class="switch-slider"></span>
+                                    </label>
+                                    <span style="margin-left: 10px;">Aktywna (widoczna w sklepie)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Logo marki -->
+                <div class="card" style="margin-top: 20px;">
+                    <div class="card-header">
+                        <h3>Logo marki</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label for="logoFile" class="form-label">Zmień logo (opcjonalnie)</label>
+                            <input type="file"
+                                   id="logoFile"
+                                   name="logoFile"
+                                   class="form-control"
+                                   accept="image/*"
+                                   onchange="previewLogo(event)">
+                            <small class="form-text">Format: JPG, PNG, SVG. Max rozmiar: 2MB. Zostaw puste aby zachować obecne logo.</small>
+                        </div>
+
+                        <!-- Podgląd aktualnego logo -->
+                        <div th:if="${brandDTO.logoUrl != null}" style="margin-top: 20px;">
+                            <label class="form-label">Aktualne logo:</label>
+                            <div style="margin-top: 10px; padding: 20px; background: #f9fafb; border-radius: 8px; display: inline-block;">
+                                <img th:src="${brandDTO.logoUrl}"
+                                     alt="Aktualne logo"
+                                     id="currentLogo"
+                                     style="max-width: 200px; max-height: 100px; object-fit: contain;">
+                            </div>
+                        </div>
+
+                        <!-- Podgląd nowego logo -->
+                        <div id="logoPreviewContainer" style="margin-top: 20px; display: none;">
+                            <label class="form-label">Podgląd nowego logo:</label>
+                            <div style="margin-top: 10px; padding: 20px; background: #f9fafb; border-radius: 8px; display: inline-block;">
+                                <img id="logoPreview"
+                                     alt="Podgląd logo"
+                                     style="max-width: 200px; max-height: 100px; object-fit: contain;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statystyki -->
+                <div class="card" style="margin-top: 20px;" th:if="${brand.products != null}">
+                    <div class="card-header">
+                        <h3>Statystyki</h3>
+                    </div>
+                    <div class="card-body">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                            <div>
+                                <div style="font-size: 32px; font-weight: bold; color: var(--brand-green);" th:text="${brand.products.size()}">0</div>
+                                <div style="color: var(--text-muted);">Produktów w tej marce</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 32px; font-weight: bold; color: var(--brand-green);"
+                                     th:text="${#temporals.format(brand.createdAt, 'dd.MM.yyyy')}">01.01.2024</div>
+                                <div style="color: var(--text-muted);">Data dodania</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Przyciski -->
+                <div class="form-actions" style="margin-top: 20px;">
+                    <button type="submit" class="btn btn-primary">💾 Zapisz zmiany</button>
+                    <a th:href="@{/admin/brands}" class="btn btn-secondary">Anuluj</a>
+                </div>
+            </form>
+        </div>
+    </main>
+</div>
+
+<script>
+    // Podgląd logo
+    function previewLogo(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('logoPreview');
+                const container = document.getElementById('logoPreviewContainer');
+                preview.src = e.target.result;
+                container.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    // Auto-hide alerts
+    setTimeout(function() {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(alert => {
+            alert.style.transition = 'opacity 0.5s';
+            alert.style.opacity = '0';
+            setTimeout(() => alert.remove(), 500);
+        });
+    }, 5000);
+</script>
+</body>
+</html>

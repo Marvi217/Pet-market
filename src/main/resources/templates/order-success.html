@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dziękujemy za zamówienie! - PetMarket</title>
+    <style>
+        :root {
+            --brand-green: #2d5a3f;
+            --bg-light: #f9fafb;
+            --text-dark: #333333;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg-light);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .success-card {
+            background: white;
+            padding: 50px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            max-width: 500px;
+        }
+
+        .check-icon {
+            font-size: 60px;
+            color: var(--brand-green);
+            margin-bottom: 20px;
+        }
+
+        .order-number {
+            background: #e9f0ec;
+            color: var(--brand-green);
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 18px;
+            margin: 20px 0;
+            display: inline-block;
+        }
+
+        .btn-home {
+            display: inline-block;
+            background: var(--brand-green);
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            margin-top: 20px;
+        }
+
+        .btn-home:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+
+<div class="success-card">
+    <div class="check-icon">✅</div>
+    <h1 style="margin:0;">Dziękujemy!</h1>
+    <p style="color: #666; margin-top: 10px;">Twoje zamówienie zostało przyjęte do realizacji.</p>
+
+    <div class="order-number">
+        Numer zamówienia: <span th:text="${orderNumber}">ORD-12345</span>
+    </div>
+
+    <p style="font-size: 14px; color: #888;">
+        Potwierdzenie wysłaliśmy na Twój adres e-mail.
+    </p>
+
+    <a th:href="@{/}" class="btn-home">Wróć do sklepu</a>
+</div>
+
+</body>
+</html>

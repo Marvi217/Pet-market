@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${category.name} + ' - PetMarket'">Produkty - PetMarket</title>
+    <style>
+        :root {
+            --brand-green: #2d5a3f;
+            --brand-light: #e9f0ec;
+            --text-dark: #333333;
+            --text-muted: #666666;
+            --border-color: #d1d5db;
+            --bg-light: #f9fafb;
+            --accent-orange: #f97316;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+        }
+
+        /* --- NAVIGATION (simplified, use fragment in real app) --- */
+        .top-bar {
+            background-color: var(--brand-green);
+            color: white;
+            padding: 8px 5%;
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+        }
+
+        .navbar {
+            background: white;
+            padding: 15px 5%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #eee;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            font-weight: bold;
+            font-size: 24px;
+            color: var(--brand-green);
+            text-decoration: none;
+            gap: 8px;
+        }
+
+        .search-container {
+            flex-grow: 1;
+            max-width: 600px;
+            margin: 0 40px;
+            position: relative;
+        }
+
+        .search-container input {
+            width: 100%;
+            padding: 12px 50px 12px 20px;
+            border-radius: 25px;
+            border: 2px solid var(--border-color);
+            background-color: #fff;
+            outline: none;
+        }
+
+        .search-btn {
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--brand-green);
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+
+        .nav-icons {
+            display: flex;
+            gap: 25px;
+            align-items: center;
+        }
+
+        .nav-link {
+            text-decoration: none;
+            color: var(--text-dark);
+            font-size: 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* --- BREADCRUMB --- */
+        .breadcrumb {
+            background: white;
+            padding: 15px 5%;
+            font-size: 14px;
+            color: var(--text-muted);
+            border-bottom: 1px solid #eee;
+        }
+
+        .breadcrumb a {
+            color: var(--text-muted);
+            text-decoration: none;
+        }
+
+        .breadcrumb a:hover {
+            color: var(--brand-green);
+        }
+
+        /* --- MAIN LAYOUT --- */
+        .main-layout {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 20px;
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 30px;
+        }
+
+        /* --- SIDEBAR FILTERS --- */
+        .sidebar {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            position: relative;
+            height: fit-content;
+        }
+
+        .filter-section {
+            margin-bottom: 30px;
+            padding-bottom: 25px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .filter-section:last-child {
+            border-bottom: none;
+        }
+
+        .filter-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0 0 15px 0;
+            color: var(--text-dark);
+        }
+
+        .filter-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+            cursor: pointer;
+        }
+
+        .filter-option input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .filter-option label {
+            font-size: 14px;
+            cursor: pointer;
+            flex-grow: 1;
+        }
+
+        .filter-count {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .price-inputs {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .price-inputs input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .btn-apply-filter {
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+            background: var(--brand-green);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+
+        .btn-clear-filters {
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+            text-align: center;
+            text-decoration: none;
+
+            background: white;
+            color: var(--brand-green);
+            border: 2px solid var(--brand-green);
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        /* --- PRODUCTS AREA --- */
+        .products-area {
+            min-height: 600px;
+        }
+
+        .products-header {
+            background: white;
+            padding: 20px 25px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .results-count {
+            font-size: 16px;
+            color: var(--text-muted);
+        }
+
+        .results-count strong {
+            color: var(--text-dark);
+            font-weight: 600;
+        }
+
+        .sort-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .sort-controls label {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .sort-controls select {
+            padding: 8px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            background: white;
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 5px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .view-toggle button {
+            padding: 8px 15px;
+            border: none;
+            background: white;
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        .view-toggle button.active {
+            background: var(--brand-green);
+            color: white;
+        }
+
+        /* --- ACTIVE FILTERS --- */
+        .active-filters {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .filter-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--brand-light);
+            color: var(--brand-green);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .filter-tag button {
+            background: none;
+            border: none;
+            color: var(--brand-green);
+            cursor: pointer;
+            font-size: 16px;
+            padding: 0;
+            line-height: 1;
+        }
+
+        /* --- PRODUCTS GRID --- */
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 20px;
+        }
+
+        .product-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            text-decoration: none;
+            color: var(--text-dark);
+            transition: all 0.3s;
+            border: 1px solid #eee;
+            position: relative;
+        }
+
+        .product-card:hover {
+            box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+            transform: translateY(-3px);
+        }
+
+        .product-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: var(--accent-orange);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 11px;
+            font-weight: bold;
+            z-index: 1;
+        }
+
+        .product-image {
+            width: 100%;
+            height: 200px;
+            background: #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 70px;
+        }
+
+        .product-info {
+            padding: 15px;
+        }
+
+        .product-rating {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        /* Dla Opcji 1 */
+        .stars {
+            font-size: 16px;
+            color: #ffa500;
+            letter-spacing: 2px;
+        }
+
+        /* Dla Opcji 2 - dodaj dodatkowo */
+        .stars {
+            position: relative;
+            display: inline-block;
+            font-size: 16px;
+            line-height: 1;
+            letter-spacing: 2px;
+        }
+
+        .filled-stars {
+            position: absolute;
+            top: 0;
+            left: 0;
+            overflow: hidden;
+            color: #ffa500;
+            white-space: nowrap;
+        }
+
+        .empty-stars {
+            color: #ddd;
+        }
+
+        .rating-count {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .stars {
+            color: #fbbf24;
+        }
+
+        .rating-count {
+            color: var(--text-muted);
+        }
+
+        .product-name {
+            font-size: 15px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+            line-height: 1.3;
+            height: 39px;
+            overflow: hidden;
+        }
+
+        .product-desc {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin: 0 0 12px 0;
+            line-height: 1.4;
+            height: 32px;
+            overflow: hidden;
+        }
+
+        .product-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 12px;
+            border-top: 1px solid #f5f5f5;
+        }
+
+        .product-price {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--brand-green);
+        }
+
+        .old-price {
+            font-size: 14px;
+            color: var(--text-muted);
+            text-decoration: line-through;
+            display: block;
+            margin-bottom: 3px;
+        }
+
+        .btn-add-cart {
+            background: var(--brand-green);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-add-cart:hover {
+            background: #1e4230;
+        }
+
+        .cart-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #ef4444;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 11px;
+            font-weight: bold;
+            min-width: 18px;
+            text-align: center;
+        }
+
+        /* --- PAGINATION --- */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 40px;
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+        }
+
+        .pagination a,
+        .pagination span {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 40px;
+            height: 40px;
+            padding: 0 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            text-decoration: none;
+            color: var(--text-dark);
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .pagination a:hover {
+            background: var(--brand-light);
+            border-color: var(--brand-green);
+            color: var(--brand-green);
+        }
+
+        .pagination .active {
+            background: var(--brand-green);
+            color: white;
+            border-color: var(--brand-green);
+        }
+
+        .pagination .disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* --- MOBILE FILTERS --- */
+        .mobile-filter-btn {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--brand-green);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            z-index: 90;
+        }
+
+        /* --- RESPONSIVE --- */
+        @media (max-width: 968px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                z-index: 999;
+                background: white;
+                border-radius: 0;
+                overflow-y: auto;
+                padding: 20px;
+            }
+
+            .sidebar.mobile-open {
+                display: block;
+            }
+
+            .mobile-filter-btn {
+                display: block;
+            }
+
+            .products-grid {
+                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+                gap: 15px;
+            }
+
+            .product-footer {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-end; /* ✅ Zmienione z center na flex-end */
+                padding-top: 12px;
+                border-top: 1px solid #f5f5f5;
+            }
+
+            .btn-add-cart {
+                background: var(--brand-green);
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 13px;
+                font-weight: 600;
+                transition: all 0.3s;
+                white-space: nowrap; /* ✅ Dodane - tekst w jednej linii */
+            }
+
+            .btn-add-cart:hover {
+                background: #1e4230;
+                transform: scale(1.05); /* ✅ Dodane - lekkie powiększenie */
+            }
+
+            .btn-add-cart:active {
+                transform: scale(0.95);
+            }
+
+            .product-footer form {
+                margin: 0; /* ✅ Usuń domyślne marginesy formularza */
+            }
+
+
+        }
+        /* --- WISHLIST HEART --- */
+        .wishlist-btn {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: white;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 2;
+            transition: all 0.3s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .wishlist-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .wishlist-btn .heart {
+            font-size: 20px;
+            transition: all 0.3s;
+            color: #d1d5db; /* Domyślny kolor - szary */
+        }
+
+        /* Kolory stanów */
+        .wishlist-btn .heart.filled {
+            color: #ef4444 !important; /* Czerwony */
+        }
+
+        .wishlist-btn .heart.empty {
+            color: #d1d5db !important; /* Szary */
+        }
+    </style>
+</head>
+<body>
+
+<div th:replace="~{fragments/header :: navbar}"></div>
+
+<!-- BREADCRUMB -->
+<div class="breadcrumb">
+    <a th:href="@{/}" href="/">Strona główwna</a>
+    <span th:text="${category.name}">Kategoria</span>
+</div>
+
+<!-- MAIN LAYOUT -->
+<div class="main-layout">
+
+    <!-- SIDEBAR FILTERS -->
+    <aside class="sidebar" id="filterSidebar">
+        <form th:action="@{/category/{s}(s=${category.slug})}" method="get">
+
+            <div class="filter-section">
+                <h3 class="filter-title">Kategoria</h3>
+                <div class="filter-option" th:each="sub : ${subCategories}">
+                    <input type="checkbox"
+                           th:id="'sub-' + ${sub.slug}"
+                           name="subcategory"
+                           th:value="${sub.slug}"
+                           th:checked="${param.subcategory != null and #lists.contains(param.subcategory, sub.slug)}">
+
+                    <label th:for="'sub-' + ${sub.slug}" th:text="${sub.name}">Nazwa</label>
+
+                    <span class="filter-count" th:text="'(' + ${sub.getProductCount()} + ')'">(0)</span>
+                </div>
+            </div>
+
+            <div class="filter-section">
+                <h3 class="filter-title">Marka</h3>
+                <div id="brandsContainer">
+                    <div class="filter-option" th:each="b, iterStat : ${allBrands}"
+                         th:classappend="${iterStat.index >= 5} ? 'extra-brands' : ''"
+                         th:style="${iterStat.index >= 5} ? 'display: none;' : ''">
+                        <input type="checkbox" name="brand" th:value="${b.slug}"
+                               th:id="${'b-' + b.id}"
+                               th:checked="${param.brand != null and #lists.contains(param.brand, b.slug)}">
+                        <label th:for="${'b-' + b.id}" th:text="${b.name}"></label>
+                    </div>
+                </div>
+                <div th:if="${#lists.size(allBrands) > 5}" style="margin-top: 10px;">
+                    <button type="button" id="toggleBrandsBtn" onclick="toggleBrands()"
+                            style="background: none; border: none; color: #007bff; cursor: pointer; padding: 0; font-weight: bold;">
+                        + Rozwiń
+                    </button>
+                </div>
+            </div>
+
+            <div class="filter-section">
+                <h3 class="filter-title">Cena (zł)</h3>
+                <div class="price-inputs">
+                    <input type="number" name="minPrice" placeholder="Od" th:value="${param.minPrice}">
+                    <input type="number" name="maxPrice" placeholder="Do" th:value="${param.maxPrice}">
+                </div>
+            </div>
+
+            <button type="submit" class="btn-apply-filter">Zastosuj filtry</button>
+            <a th:href="@{/category/{s}(s=${category.slug})}" class="btn-clear-filters">Wyczyść filtry</a>
+        </form>
+    </aside>
+
+    <!-- PRODUCTS AREA -->
+    <div class="products-grid">
+        <div th:each="product : ${products}" class="product-card">
+
+            <button type="button"
+                    class="wishlist-btn"
+                    th:attr="data-product-id=${product.id}"
+                    onclick="handleWishlist(this, event)"
+                    title="Dodaj do ulubionych">
+            <span class="heart"
+                  th:classappend="${wishlistProductIds.contains(product.id)} ? 'filled' : 'empty'">
+                ♥
+            </span>
+            </button>
+
+            <div class="product-badge"
+                 th:if="${product.hasDiscount}"
+                 th:text="${'-' + product.discountPercent + '%'}">-25%</div>
+
+            <a th:href="@{/product/{id}(id=${product.id})}" style="text-decoration: none; color: inherit; display: block;">
+                <div class="product-image" th:text="${product.imageUrl}">🦴</div>
+
+                <div class="product-info">
+                    <div class="product-rating">
+                    <span class="stars">
+                        <span class="filled-stars" th:style="'width: ' + ${starHelper.getFilledStarsWidth(product.rating)}">★★★★★</span>
+                        <span class="empty-stars">★★★★★</span>
+                    </span>
+                        <span class="rating-count" th:text="'(' + ${product.reviewCount} + ')'">(0)</span>
+                    </div>
+
+                    <h3 class="product-name" th:text="${product.name}">Nazwa produktu</h3>
+
+                    <p class="product-desc" th:text="${product.shortDescription}">Krótki opis</p>
+
+                    <div class="product-footer">
+                        <div>
+                        <span class="old-price"
+                              th:if="${product.hasDiscount and product.oldPrice != null}"
+                              th:text="${#numbers.formatDecimal(product.oldPrice, 1, 2) + ' zł'}">0.00 zł</span>
+
+                            <span class="product-price"
+                                  th:text="${#numbers.formatDecimal(product.price, 1, 2) + ' zł'}">0.00 zł</span>
+                        </div>
+
+                        <form class="add-to-cart-form" style="display: inline;" onsubmit="event.preventDefault();">
+                            <input type="hidden" name="productId" th:value="${product.id}">
+                            <input type="hidden" name="quantity" value="1">
+
+                            <button type="button" class="btn-add-cart"
+                                    onclick="handleAddToCart(this, event)">
+                                Do koszyka
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- MOBILE FILTER BUTTON -->
+<button class="mobile-filter-btn" onclick="document.getElementById('filterSidebar').classList.toggle('mobile-open')">
+    Filtry
+</button>
+<script src="/js/cart.js"></script>
+
+</body>
+</html>

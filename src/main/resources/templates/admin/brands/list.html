@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/admin-fragments :: admin-head('Marki')}"></head>
+<body>
+<div class="admin-wrapper">
+    <aside th:replace="~{fragments/admin-fragments :: sidebar('brands')}"></aside>
+
+    <main class="admin-main">
+        <div class="admin-content">
+            <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+            <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+            <div class="breadcrumb">
+                <a th:href="@{/admin/main/dashboard}">Dashboard</a>
+                <span class="breadcrumb-separator">›</span>
+                <span>Marki</span>
+            </div>
+
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">Marki produktów</h1>
+                    <p class="page-subtitle">Zarządzaj markami dostępnymi w sklepie</p>
+                </div>
+                <div class="page-actions">
+                    <a th:href="@{/admin/brands/new}" class="btn btn-primary">➕ Dodaj markę</a>
+                </div>
+            </div>
+
+            <div class="stats-grid" style="margin-bottom: 25px;">
+                <div class="stat-card">
+                    <div class="stat-icon green">🏷️</div>
+                    <div class="stat-info">
+                        <h3 th:text="${totalBrands}">0</h3>
+                        <p>Wszystkie marki</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-card">
+                <div class="card-header">
+                    <form th:action="@{/admin/brands}" method="get" class="search-form">
+                        <input type="text" name="keyword" th:value="${keyword}" placeholder="Szukaj marki...">
+                        <button type="submit" class="btn btn-secondary">Szukaj</button>
+                    </form>
+                </div>
+
+                <div class="brands-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+                    <div th:each="brand : ${brands}" class="brand-item-card" style="background: white; border: 1px solid #eee; border-radius: 12px; padding: 20px;">
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <div class="brand-logo-container" style="width: 60px; height: 60px; background: #f9f9f9; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                <img th:if="${brand.logoUrl}" th:src="${brand.logoUrl}" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                                <span th:unless="${brand.logoUrl}" style="font-size: 24px;">🏷️</span>
+                            </div>
+                            <div style="flex: 1;">
+                                <h3 th:text="${brand.name}" style="margin: 0; font-size: 18px;"></h3>
+                                <p th:text="${brand.description}" style="font-size: 13px; color: var(--text-muted); margin: 5px 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;"></p>
+                            </div>
+                            <div class="actions" style="display: flex; gap: 8px;">
+                                <a th:href="@{/admin/brands/edit/{id}(id=${brand.id})}" class="action-btn edit" title="Edytuj">✏️</a>
+                                <form th:action="@{/admin/brands/delete/{id}(id=${brand.id})}" method="post" onsubmit="return confirm('Usunąć markę?')">
+                                    <button type="submit" class="action-btn delete" title="Usuń">🗑️</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div th:if="${brands.totalElements == 0}" style="text-align: center; padding: 50px;">
+                    <p style="color: var(--text-muted);">Nie znaleziono żadnych marek.</p>
+                </div>
+            </div>
+
+            <div class="pagination" style="margin-top: 30px;" th:if="${brands.totalPages > 1}">
+                <a th:href="@{/admin/brands(page=${brands.number - 1}, keyword=${keyword})}" class="pagination-item" th:classappend="${brands.first ? 'disabled' : ''}">‹</a>
+                <th:block th:each="i : ${#numbers.sequence(0, brands.totalPages - 1)}">
+                    <a th:href="@{/admin/brands(page=${i}, keyword=${keyword})}" class="pagination-item" th:classappend="${brands.number == i ? 'active' : ''}" th:text="${i + 1}"></a>
+                </th:block>
+                <a th:href="@{/admin/brands(page=${brands.number + 1}, keyword=${keyword})}" class="pagination-item" th:classappend="${brands.last ? 'disabled' : ''}">›</a>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>
