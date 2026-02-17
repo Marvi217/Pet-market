@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/admin-fragments :: admin-head('Opinie klientów')}"></head>
+<body>
+<div class="admin-wrapper">
+    <aside th:replace="~{fragments/admin-fragments :: sidebar('reviews')}"></aside>
+
+    <main class="admin-main">
+        <div class="admin-content">
+            <div th:if="${success}" class="alert alert-success" th:text="${success}" style="margin-bottom: 20px; padding: 15px; background: #d4edda; color: #155724; border-radius: 8px;"></div>
+            <div th:if="${error}" class="alert alert-danger" th:text="${error}" style="margin-bottom: 20px; padding: 15px; background: #f8d7da; color: #721c24; border-radius: 8px;"></div>
+
+            <div class="breadcrumb">
+                <a th:href="@{/admin/main/dashboard}">Dashboard</a>
+                <span class="breadcrumb-separator">›</span>
+                <span>Recenzje</span>
+            </div>
+
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">⭐ Opinie i recenzje</h1>
+                    <p class="page-subtitle">Zarządzaj opiniami klientów o produktach</p>
+                </div>
+            </div>
+
+            <div class="stats-grid" style="margin-bottom: 25px;">
+                <div class="stat-card">
+                    <div class="stat-icon orange">⏳</div>
+                    <div class="stat-info">
+                        <h3 th:text="${pendingCount != null ? pendingCount : 0}">0</h3>
+                        <p>Oczekujące (nowe)</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon blue">📝</div>
+                    <div class="stat-info">
+                        <h3 th:text="${reviews.totalElements}">0</h3>
+                        <p>Wszystkich opinii</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-bottom: 20px;">
+                <div class="card-body">
+                    <form th:action="@{/admin/reviews}" method="get" style="display: flex; gap: 15px; align-items: flex-end;">
+                        <div>
+                            <label style="display:block; font-size: 12px; margin-bottom: 5px;">Min. ocena</label>
+                            <select name="minRating" class="form-control" style="padding: 8px; border-radius: 5px; border: 1px solid #ddd;">
+                                <option value="">Dowolna</option>
+                                <option th:each="r : ${#numbers.sequence(1,5)}" th:value="${r}" th:text="${r} + ' ⭐'" th:selected="${param.minRating != null && param.minRating[0] == r.toString()}"></option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-secondary" style="background: #eee; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer;">Filtruj</button>
+                        <a th:href="@{/admin/reviews}" class="btn" style="text-decoration: none; color: #666; font-size: 14px;">Wyczyść</a>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body" style="padding: 0;">
+                    <div class="table-container">
+                        <table class="admin-table" style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                            <tr style="background: #f8f9fa; text-align: left;">
+                                <th style="padding: 15px;">Produkt</th>
+                                <th>Klient</th>
+                                <th>Ocena</th>
+                                <th>Treść opinii</th>
+                                <th>Data</th>
+                                <th class="actions-col">Akcje</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="review : ${reviews.content}" style="border-bottom: 1px solid #eee;">
+                                <td style="padding: 15px;">
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <img th:if="${review.product.imageUrl}" th:src="${review.product.imageUrl}" style="width: 40px; height: 40px; border-radius: 4px; object-fit: cover;">
+                                        <span th:text="${review.product.name}" style="font-weight: 600;">Produkt</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div th:text="${review.user.firstName + ' ' + review.user.lastName}">Jan Kowalski</div>
+                                    <small style="color: #888;" th:text="${review.user.email}">jan@mail.com</small>
+                                </td>
+                                <td>
+                                        <span style="color: #f1c40f;">
+                                            <th:block th:each="i : ${#numbers.sequence(1, 5)}">
+                                                <span th:text="${review.rating >= i ? '★' : '☆'}"></span>
+                                            </th:block>
+                                        </span>
+                                </td>
+                                <td>
+                                    <div style="max-width: 300px; font-size: 14px;" th:text="${review.comment}">
+                                        Bardzo dobry produkt, polecam...
+                                    </div>
+                                </td>
+                                <td th:text="${#temporals.format(review.createdAt, 'dd.MM.yyyy HH:mm')}">01.01.2024</td>
+                                <td class="actions-col">
+                                    <div class="action-buttons">
+                                        <form th:action="@{/admin/reviews/{id}/delete(id=${review.id})}" method="post"
+                                              onsubmit="return confirm('Czy na pewno chcesz usunąć tę opinię? Tej operacji nie można cofnąć.')">
+                                            <button type="submit" class="action-btn delete" style="border:none; background:none; cursor:pointer;">🗑️</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr th:if="${reviews.totalElements == 0}">
+                                <td colspan="6" style="text-align: center; padding: 40px; color: #999;">Brak opinii do wyświetlenia.</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pagination" th:if="${totalPages > 1}" style="margin-top: 20px; display: flex; gap: 5px; justify-content: center;">
+                <a th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+                   th:href="@{/admin/reviews(page=${i}, minRating=${param.minRating})}"
+                   th:text="${i + 1}"
+                   th:classappend="${currentPage == i ? 'active' : ''}"
+                   style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; text-decoration: none; color: #333;"
+                   th:styleappend="${currentPage == i ? 'background: var(--brand-green); color: white; border-color: var(--brand-green);' : ''}">
+                </a>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>

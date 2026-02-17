@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formularz promocji - Panel Administratora</title>
+    <link rel="stylesheet" th:href="@{/css/admin-styles.css}">
+
+    <style>
+        /* =========================================
+           STYLE DLA SEKCYJNOŚCI I SCROLLBARA
+           ========================================= */
+
+        /* Kontener z paskiem przewijania */
+        .products-scroll-container,
+        .categories-scroll-container,
+        .brands-scroll-container {
+            max-height: 400px;
+            overflow-y: auto;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 10px;
+        }
+
+        /* Wygląd paska przewijania (Webkit) */
+        .products-scroll-container::-webkit-scrollbar,
+        .categories-scroll-container::-webkit-scrollbar,
+        .brands-scroll-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        .products-scroll-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        .products-scroll-container::-webkit-scrollbar-thumb {
+            background: #cbd5e1; /* Szary */
+            border-radius: 4px;
+        }
+        .products-scroll-container::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
+        }
+
+        /* Lista produktów (Karty) */
+        .product-grid, .brand-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .product-card, .brand-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            padding: 10px 15px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s;
+        }
+
+        .product-card:hover {
+            background: #fff7ed; /* Lekki pomarańcz po najechaniu */
+            border-color: #fb923c;
+        }
+
+        .product-info h4 { margin: 0; font-size: 14px; font-weight: 600; color: #374151; }
+        .product-price { font-size: 13px; color: #fb923c; font-weight: 700; }
+
+        /* Przyciski dodawania */
+        .btn-add-product {
+            background: #fb923c;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .btn-add-product.added {
+            background: #10b981; /* Zielony */
+            cursor: default;
+        }
+        .btn-add-product:disabled {
+            opacity: 0.8;
+        }
+
+        /* Zakładki (Tabs) */
+        .selection-tabs {
+            display: flex;
+            border-bottom: 2px solid #e5e7eb;
+            margin-bottom: 15px;
+        }
+        .tab-btn {
+            padding: 10px 20px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-weight: 500;
+            color: #6b7280;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+        }
+        .tab-btn.active {
+            color: #fb923c;
+            border-bottom-color: #fb923c;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Kategorie (Drzewo) */
+        .category-group {
+            background: white;
+            border: 1px solid #e5e7eb;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+        .category-header {
+            font-weight: 600;
+            margin-bottom: 5px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .subcategory-list {
+            padding-left: 20px;
+            margin-top: 5px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .checkbox-label input {
+            accent-color: #fb923c;
+            width: 16px;
+            height: 16px;
+        }
+
+        /* Wybrane produkty (Chipy) */
+        .selected-products-section {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 2px dashed #e5e7eb;
+        }
+        .selected-products-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            min-height: 50px;
+            margin-top: 10px;
+        }
+        .selected-product-chip {
+            background: #eef2ff;
+            border: 1px solid #c7d2fe;
+            color: #3730a3;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .chip-remove {
+            background: none;
+            border: none;
+            color: #ef4444;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .no-products-placeholder {
+            color: #9ca3af;
+            font-style: italic;
+            width: 100%;
+            text-align: center;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="admin-wrapper">
+    <aside th:replace="~{fragments/admin-fragments :: sidebar('promotions')}"></aside>
+    <main class="admin-main">
+        <div class="admin-content">
+            <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+            <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+            <div class="breadcrumb">
+                <a th:href="@{/admin/main/dashboard}">Dashboard</a>
+                <span class="breadcrumb-separator">›</span>
+                <a th:href="@{/admin/promotions}">Promocje</a>
+                <span class="breadcrumb-separator">›</span>
+                <span th:text="${promotionDTO.id != null ? 'Edycja' : 'Nowa promocja'}">Nowa promocja</span>
+            </div>
+
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title" th:text="${promotionDTO.id != null ? '✏️ Edytuj promocję' : '➕ Nowa promocja'}">➕ Nowa promocja</h1>
+                    <p class="page-subtitle">Wypełnij poniższe pola, aby utworzyć lub zaktualizować promocję</p>
+                </div>
+            </div>
+
+            <form th:action="${promotionDTO.id != null ? '/admin/promotions/' + promotionDTO.id : '/admin/promotions'}"
+                  method="post"
+                  th:object="${promotionDTO}"
+                  class="admin-form">
+
+                <input type="hidden" th:field="*{id}" />
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>📋 Podstawowe informacje</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 2;">
+                                <label for="name" class="required">Nazwa promocji</label>
+                                <input type="text"
+                                       id="name"
+                                       th:field="*{name}"
+                                       class="form-control"
+                                       placeholder="np. Zimowa wyprzedaż 2026"
+                                       required>
+                                <span class="error-message" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="active">Status</label>
+                                <div class="toggle-switch">
+                                    <input type="checkbox"
+                                           id="active"
+                                           th:field="*{active}"
+                                           class="toggle-input">
+                                    <label for="active" class="toggle-label">
+                                        <span class="toggle-text">Aktywna</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="description">Opis promocji</label>
+                            <textarea id="description"
+                                      th:field="*{description}"
+                                      class="form-control"
+                                      rows="3"
+                                      placeholder="Krótki opis promocji widoczny dla użytkowników"></textarea>
+                            <span class="error-message" th:if="${#fields.hasErrors('description')}" th:errors="*{description}"></span>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="code">Kod promocyjny</label>
+                                <input type="text"
+                                       id="code"
+                                       th:field="*{code}"
+                                       class="form-control"
+                                       placeholder="np. ZIMA2026"
+                                       style="text-transform: uppercase;"
+                                       maxlength="20">
+                                <small class="form-hint">Pozostaw puste dla automatycznej promocji bez kodu</small>
+                                <span class="error-message" th:if="${#fields.hasErrors('code')}" th:errors="*{code}"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>💰 Wartość rabatu</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label for="type" class="required">Typ rabatu</label>
+                            <select id="type"
+                                    th:field="*{type}"
+                                    class="form-control"
+                                    onchange="toggleDiscountFields()"
+                                    required>
+                                <option value="">Wybierz typ rabatu</option>
+                                <option th:each="promotionType : ${promotionTypes}"
+                                        th:value="${promotionType.name()}"
+                                        th:text="${promotionType.displayName}">
+                                </option>
+                            </select>
+                            <span class="error-message" th:if="${#fields.hasErrors('type')}" th:errors="*{type}"></span>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group" id="percentageField" style="display: none;">
+                                <label for="discountPercentage">Procent rabatu (%)</label>
+                                <input type="number"
+                                       id="discountPercentage"
+                                       th:field="*{discountPercentage}"
+                                       class="form-control"
+                                       placeholder="np. 20"
+                                       min="0"
+                                       max="100"
+                                       step="0.01">
+                                <span class="error-message" th:if="${#fields.hasErrors('discountPercentage')}" th:errors="*{discountPercentage}"></span>
+                            </div>
+
+                            <div class="form-group" id="amountField" style="display: none;">
+                                <label for="discountAmount">Kwota rabatu (zł)</label>
+                                <input type="number"
+                                       id="discountAmount"
+                                       th:field="*{discountAmount}"
+                                       class="form-control"
+                                       placeholder="np. 50.00"
+                                       min="0"
+                                       step="0.01">
+                                <span class="error-message" th:if="${#fields.hasErrors('discountAmount')}" th:errors="*{discountAmount}"></span>
+                            </div>
+
+                            <div class="form-group" id="minOrderField">
+                                <label for="minOrderAmount">Minimalna wartość zamówienia (zł)</label>
+                                <input type="number"
+                                       id="minOrderAmount"
+                                       th:field="*{minOrderAmount}"
+                                       class="form-control"
+                                       placeholder="np. 100.00"
+                                       min="0"
+                                       step="0.01">
+                                <small class="form-hint">Pozostaw puste dla braku limitu</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>📅 Okres obowiązywania</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="startDate" class="required">Data rozpoczęcia</label>
+                                <input type="date"
+                                       id="startDate"
+                                       th:field="*{startDate}"
+                                       class="form-control"
+                                       required>
+                                <span class="error-message" th:if="${#fields.hasErrors('startDate')}" th:errors="*{startDate}"></span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="endDate">Data zakończenia</label>
+                                <input type="date"
+                                       id="endDate"
+                                       th:field="*{endDate}"
+                                       class="form-control">
+                                <small class="form-hint">Pozostaw puste dla promocji bezterminowej</small>
+                                <span class="error-message" th:if="${#fields.hasErrors('endDate')}" th:errors="*{endDate}"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>🎫 Limity użycia</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="maxUsage">Maksymalna liczba użyć</label>
+                                <input type="number"
+                                       id="maxUsage"
+                                       th:field="*{maxUsage}"
+                                       class="form-control"
+                                       placeholder="np. 100"
+                                       min="1">
+                                <small class="form-hint">Pozostaw puste dla nieograniczonej liczby użyć</small>
+                            </div>
+
+                            <div class="form-group" th:if="${promotion != null}">
+                                <label>Aktualne wykorzystanie</label>
+                                <input type="text"
+                                       class="form-control"
+                                       th:value="${promotion.currentUsage + ' użyć'}"
+                                       disabled
+                                       readonly>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>🛍️ Produkty objęte promocją</h3>
+                        <p class="card-subtitle">Wybierz produkty, kategorie lub marki, które będą objęte promocją</p>
+                    </div>
+                    <div class="card-body">
+                        <div class="selection-tabs">
+                            <button type="button" class="tab-btn active" onclick="switchTab('products')">
+                                <span class="tab-icon">📦</span>
+                                <span>Produkty</span>
+                            </button>
+                            <button type="button" class="tab-btn" onclick="switchTab('categories')">
+                                <span class="tab-icon">📂</span>
+                                <span>Kategorie</span>
+                            </button>
+                            <button type="button" class="tab-btn" onclick="switchTab('brands')">
+                                <span class="tab-icon">🏷️</span>
+                                <span>Marki</span>
+                            </button>
+                        </div>
+
+                        <div id="products-tab" class="tab-content active">
+                            <div class="search-box">
+                                <div class="search-input-wrapper">
+                                    <span class="search-icon">🔍</span>
+                                    <input type="text"
+                                           id="productSearch"
+                                           class="search-input"
+                                           placeholder="Wyszukaj produkt po nazwie..."
+                                           onkeyup="filterProducts()">
+                                    <button type="button" class="clear-search" onclick="clearSearch()" style="display: none;">✕</button>
+                                </div>
+                            </div>
+
+                            <div class="products-scroll-container">
+                                <div class="product-grid" id="productList">
+                                    <div th:each="product : ${products}"
+                                         class="product-card"
+                                         th:attr="data-name=${product.name}">
+                                        <div class="product-card-content">
+                                            <div class="product-info">
+                                                <h4 class="product-name" th:text="${product.name}">Nazwa produktu</h4>
+                                                <span class="product-price" th:text="${product.price + ' zł'}">0 zł</span>
+                                            </div>
+                                            <button type="button"
+                                                    class="btn-add-product"
+                                                    th:attr="data-id=${product.id}, data-name=${product.name}"
+                                                    onclick="addProduct(this)">
+                                                <span class="btn-icon">➕</span>
+                                                <span class="btn-text">Dodaj</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="noProductsFound" class="no-results" style="display: none;">
+                                    <span class="no-results-icon">🔍</span>
+                                    <p>Nie znaleziono produktów</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="categories-tab" class="tab-content">
+                            <div class="categories-scroll-container">
+                                <div class="category-selection">
+                                    <div th:each="category : ${categories}" class="category-group">
+                                        <div class="category-header">
+                                            <label class="checkbox-label">
+                                                <input type="checkbox"
+                                                       th:value="${category.id}"
+                                                       onchange="selectCategory(this)">
+                                                <span class="checkbox-custom"></span>
+                                                <span class="category-name" th:text="${category.name}">Kategoria</span>
+                                            </label>
+                                        </div>
+
+                                        <div class="subcategory-list" th:if="${category.subcategories}">
+                                            <div th:each="subcategory : ${category.subcategories}" class="subcategory-item">
+                                                <label class="checkbox-label">
+                                                    <input type="checkbox"
+                                                           th:value="${subcategory.id}"
+                                                           onchange="selectSubcategory(this)">
+                                                    <span class="checkbox-custom"></span>
+                                                    <span class="subcategory-name" th:text="${subcategory.name}">Subkategoria</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="brands-tab" class="tab-content">
+                            <div class="brands-scroll-container">
+                                <div class="brand-grid">
+                                    <div th:each="brand : ${brands}" class="brand-card">
+                                        <label class="checkbox-label brand-label">
+                                            <input type="checkbox"
+                                                   th:value="${brand.id}"
+                                                   onchange="selectBrand(this)">
+                                            <span class="checkbox-custom"></span>
+                                            <span class="brand-name" th:text="${brand.name}">Marka</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="selected-products-section">
+                            <div class="selected-header">
+                                <h4>
+                                    <span class="selected-icon">✓</span>
+                                    Wybrane produkty
+                                    <span class="selected-badge" id="selectedCount">0</span>
+                                </h4>
+                                <button type="button" class="btn-clear-all" onclick="clearAllProducts()" style="display: none;" id="clearAllBtn">
+                                    🗑️ Wyczyść wszystkie
+                                </button>
+                            </div>
+                            <div id="selectedProductsList" class="selected-products-list">
+                                <div class="no-products-placeholder">
+                                    <span class="placeholder-icon">📦</span>
+                                    <p>Nie wybrano żadnych produktów</p>
+                                    <small>Wybierz produkty z listy powyżej</small>
+                                </div>
+                            </div>
+
+                            <div id="hiddenProductInputs"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <a th:href="@{/admin/promotions}" class="btn btn-secondary">❌ Anuluj</a>
+                    <button type="submit" class="btn btn-primary">
+                        <span th:if="${promotionDTO.id == null}">✅ Utwórz promocję</span>
+                        <span th:if="${promotionDTO.id != null}">💾 Zapisz zmiany</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+</div>
+<script th:inline="javascript">
+    /* =========================================
+       1. INICJALIZACJA DANYCH (THYMELEAF)
+       ========================================= */
+    // Pobieramy listę wszystkich produktów i ID produktów już przypisanych (dla edycji)
+    /*<![CDATA[*/
+    const allProducts = /*[[${products}]]*/ [];
+    const initialProductIds = /*[[${promotionDTO.productIds}]]*/ [];
+    /*]]>*/
+
+    // Główny stan aplikacji - Mapa: ID produktu -> Nazwa produktu
+    let selectedProducts = new Map();
+
+    /* =========================================
+       2. CYKL ŻYCIA STRONY
+       ========================================= */
+    document.addEventListener('DOMContentLoaded', function() {
+        // Ustawienie pól rabatowych na start
+        toggleDiscountFields();
+
+        // Przywracanie zaznaczonych produktów (tryb edycji)
+        if (initialProductIds && initialProductIds.length > 0) {
+            initialProductIds.forEach(id => {
+                // Szukamy produktu w pełnej liście, aby pobrać jego nazwę
+                // (id z bazy może być liczbą, konwertujemy na string dla spójności mapy)
+                const product = allProducts.find(p => p.id == id);
+                if (product) {
+                    selectedProducts.set(id.toString(), product.name);
+                }
+            });
+            // Po załadowaniu danych, odświeżamy widok
+            updateSelectedProductsList();
+
+            // Opcjonalnie: Zaznacz checkboxy kategorii/marek (logika uproszczona)
+            // Można to pominąć, jeśli nie chcesz automatycznie zaznaczać grup przy edycji
+        }
+    });
+
+    /* =========================================
+       3. LOGIKA RABATÓW I ZAKŁADEK
+       ========================================= */
+    function toggleDiscountFields() {
+        const typeSelect = document.getElementById('type');
+        const type = typeSelect ? typeSelect.value : '';
+
+        const percentageField = document.getElementById('percentageField');
+        const amountField = document.getElementById('amountField');
+        // minOrderField jest zazwyczaj widoczny zawsze, ale można go ukryć dla darmowej dostawy
+
+        // Reset
+        if(percentageField) percentageField.style.display = 'none';
+        if(amountField) amountField.style.display = 'none';
+
+        // Logika wyświetlania
+        if (type === 'PERCENTAGE' || type === 'PERCENTAGE_DISCOUNT') {
+            if(percentageField) percentageField.style.display = 'block';
+        } else if (type === 'FIXED_AMOUNT' || type === 'FIXED_DISCOUNT' || type === 'BUNDLE_DISCOUNT') {
+            if(amountField) amountField.style.display = 'block';
+        }
+    }
+
+    function switchTab(tabId) {
+        // Ukryj wszystkie treści i odznacz przyciski
+        document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+        // Pokaż wybrany
+        const activeTab = document.getElementById(tabId + '-tab');
+        if (activeTab) activeTab.style.display = 'block';
+
+        // Zaznacz kliknięty przycisk
+        event.currentTarget.classList.add('active');
+    }
+
+    /* =========================================
+       4. LOGIKA WYBIERANIA PRODUKTÓW
+       ========================================= */
+
+    // Dodawanie pojedynczego produktu przyciskiem "Dodaj"
+    function addProduct(button) {
+        const id = button.getAttribute('data-id');
+        const name = button.getAttribute('data-name');
+
+        if (!selectedProducts.has(id)) {
+            selectedProducts.set(id, name);
+            updateSelectedProductsList();
+        }
+    }
+
+    // Usuwanie pojedynczego produktu (z chipa)
+    function removeProduct(id) {
+        selectedProducts.delete(id.toString());
+        updateSelectedProductsList();
+    }
+
+    // Wyczyść wszystko
+    function clearAllProducts() {
+        if (confirm('Czy na pewno chcesz usunąć wszystkie wybrane produkty?')) {
+            selectedProducts.clear();
+
+            // Odznaczamy też wszystkie checkboxy grupowe
+            document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                // Pomijamy checkbox "Status Aktywna"
+                if (!cb.id.includes('active')) cb.checked = false;
+            });
+
+            updateSelectedProductsList();
+        }
+    }
+
+    // Filtrowanie (Szukajka)
+    function filterProducts() {
+        const term = document.getElementById('productSearch').value.toLowerCase();
+        const cards = document.querySelectorAll('.product-card');
+        let hasVisible = false;
+
+        cards.forEach(card => {
+            const name = card.getAttribute('data-name').toLowerCase();
+            if (name.includes(term)) {
+                card.style.display = 'flex';
+                hasVisible = true;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        // Obsługa komunikatu "Brak wyników"
+        const noResults = document.getElementById('noProductsFound');
+        if (noResults) noResults.style.display = hasVisible ? 'none' : 'flex';
+
+        // Pokaż/ukryj krzyżyk czyszczenia
+        const clearBtn = document.querySelector('.clear-search');
+        if(clearBtn) clearBtn.style.display = term.length > 0 ? 'flex' : 'none';
+    }
+
+    function clearSearch() {
+        document.getElementById('productSearch').value = '';
+        filterProducts();
+    }
+
+    /* =========================================
+       5. LOGIKA GRUPOWA (KATEGORIE / MARKI)
+       ========================================= */
+
+    // Główna funkcja sterująca zaznaczaniem grupowym
+    function toggleGroupSelection(groupId, type, isChecked) {
+        // Iterujemy przez pełną listę produktów (przekazaną z modelu)
+        allProducts.forEach(product => {
+            let match = false;
+
+            // Sprawdzamy czy produkt należy do zaznaczonej grupy
+            // Zakładamy, że obiekt produktu w 'allProducts' ma pola categoryId, brandId itp.
+            if (type === 'category' && product.category && product.category.id == groupId) match = true;
+            if (type === 'subcategory' && product.subcategory && product.subcategory.id == groupId) match = true;
+            if (type === 'brand' && product.brand && product.brand.id == groupId) match = true;
+
+            // Alternatywnie, jeśli Twoje DTO ma płaskie ID (np. product.categoryId)
+            if (type === 'category' && product.categoryId == groupId) match = true;
+            if (type === 'subcategory' && product.subcategoryId == groupId) match = true;
+            if (type === 'brand' && product.brandId == groupId) match = true;
+
+            if (match) {
+                if (isChecked) {
+                    // Dodaj, jeśli nie istnieje
+                    if (!selectedProducts.has(product.id.toString())) {
+                        selectedProducts.set(product.id.toString(), product.name);
+                    }
+                } else {
+                    // Usuń przy odznaczeniu grupy
+                    // (Opcjonalnie: niektórzy wolą, by odznaczenie grupy NIE usuwało produktów,
+                    // jeśli zostały dodane ręcznie. Tutaj usuwamy dla spójności).
+                    selectedProducts.delete(product.id.toString());
+                }
+            }
+        });
+        updateSelectedProductsList();
+    }
+
+    //wrappery dla Twojego HTML (onchange="selectCategory(this)")
+    function selectCategory(checkbox) {
+        toggleGroupSelection(checkbox.value, 'category', checkbox.checked);
+    }
+
+    function selectSubcategory(checkbox) {
+        toggleGroupSelection(checkbox.value, 'subcategory', checkbox.checked);
+    }
+
+    function selectBrand(checkbox) {
+        toggleGroupSelection(checkbox.value, 'brand', checkbox.checked);
+    }
+
+    /* =========================================
+       6. AKTUALIZACJA INTERFEJSU (RENDEROWANIE)
+       ========================================= */
+    function updateSelectedProductsList() {
+        const container = document.getElementById('selectedProductsList');
+        const hiddenInputsContainer = document.getElementById('hiddenProductInputs');
+        const countBadge = document.getElementById('selectedCount');
+        const clearAllBtn = document.getElementById('clearAllBtn');
+
+        // 1. Reset kontenerów
+        container.innerHTML = '';
+        hiddenInputsContainer.innerHTML = '';
+
+        // 2. Aktualizacja licznika
+        countBadge.innerText = selectedProducts.size;
+        if(clearAllBtn) clearAllBtn.style.display = selectedProducts.size > 0 ? 'flex' : 'none';
+
+        // 3. Pusty stan
+        if (selectedProducts.size === 0) {
+            container.innerHTML = `
+                <div class="no-products-placeholder">
+                    <span class="placeholder-icon">📦</span>
+                    <p>Nie wybrano żadnych produktów</p>
+                </div>`;
+
+            // Resetujemy przyciski "Dodaj" na liście
+            document.querySelectorAll('.btn-add-product').forEach(btn => {
+                btn.classList.remove('added');
+                btn.innerHTML = '<span class="btn-icon">➕</span><span class="btn-text">Dodaj</span>';
+                btn.disabled = false;
+            });
+            return;
+        }
+
+        // 4. Generowanie elementów
+        selectedProducts.forEach((name, id) => {
+            // A. Wizualny Chip
+            const chip = document.createElement('div');
+            chip.className = 'selected-product-chip';
+            chip.innerHTML = `
+                <span class="chip-text">${name}</span>
+                <button type="button" class="chip-remove" onclick="removeProduct('${id}')">✕</button>
+            `;
+            container.appendChild(chip);
+
+            // B. Ukryty Input (Dla Spring Boota!)
+            // To jest kluczowe - tworzy parametry productIds=1&productIds=2...
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'productIds'; // Musi pasować do pola w DTO (List<Long> productIds)
+            input.value = id;
+            hiddenInputsContainer.appendChild(input);
+        });
+
+        // 5. Aktualizacja stanu przycisków na liście produktów
+        document.querySelectorAll('.btn-add-product').forEach(btn => {
+            const btnId = btn.getAttribute('data-id');
+            if (selectedProducts.has(btnId)) {
+                btn.classList.add('added');
+                btn.innerHTML = '<span class="btn-icon">✓</span><span class="btn-text">Dodano</span>';
+                btn.disabled = true;
+            } else {
+                btn.classList.remove('added');
+                btn.innerHTML = '<span class="btn-icon">➕</span><span class="btn-text">Dodaj</span>';
+                btn.disabled = false;
+            }
+        });
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${subcategoryDTO.id != null ? 'Edytuj subkategorię' : 'Dodaj subkategorię'} + ' - Panel Administracyjny PetMarket'">
+        Formularz subkategorii - Panel Administracyjny PetMarket
+    </title>
+    <link rel="stylesheet" href="/css/admin-styles.css">
+</head>
+<body>
+<div class="admin-wrapper">
+    <!-- SIDEBAR -->
+    <div th:replace="~{fragments/admin-fragments :: sidebar('categories')}"></div>
+
+    <!-- MAIN CONTENT -->
+    <main class="admin-main">
+        <!-- PAGE CONTENT -->
+        <div class="admin-content">
+            <!-- BREADCRUMB -->
+            <div class="breadcrumb">
+                <a th:href="@{/admin/dashboard}">Dashboard</a>
+                <span class="breadcrumb-separator">›</span>
+                <a th:href="@{/admin/categories}">Kategorie</a>
+                <span class="breadcrumb-separator">›</span>
+                <span th:if="${selectedCategory != null}">
+                    <a th:href="@{/admin/subcategories/category/{id}(id=${selectedCategory.id})}"
+                       th:text="${selectedCategory.name}">Kategoria</a>
+                    <span class="breadcrumb-separator">›</span>
+                </span>
+                <span th:text="${subcategoryDTO.id != null ? 'Edytuj subkategorię' : 'Dodaj subkategorię'}">Formularz</span>
+            </div>
+
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title" th:text="${subcategoryDTO.id != null ? '✏️ Edytuj subkategorię' : '➕ Dodaj nową subkategorię'}">
+                        Formularz subkategorii
+                    </h1>
+                    <p class="page-subtitle" th:if="${subcategoryDTO.id != null}">
+                        Edytuj szczegóły subkategorii "<span th:text="${subcategory.name}"></span>"
+                    </p>
+                    <p class="page-subtitle" th:unless="${subcategoryDTO.id != null}">
+                        Utwórz nową subkategorię w systemie
+                    </p>
+                </div>
+                <div class="page-actions">
+                    <a th:href="@{/admin/subcategories/category/{id}(id=${subcategoryDTO.categoryId})}"
+                       th:if="${subcategoryDTO.categoryId != null}"
+                       class="btn btn-secondary">← Powrót</a>
+                    <a th:href="@{/admin/categories}"
+                       th:unless="${subcategoryDTO.categoryId != null}"
+                       class="btn btn-secondary">← Powrót</a>
+                </div>
+            </div>
+
+            <!-- ALERTS (success/error messages) -->
+            <div th:if="${success}" class="alert alert-success">
+                <span class="alert-icon">✅</span>
+                <span th:text="${success}">Operacja zakończona pomyślnie</span>
+            </div>
+
+            <div th:if="${error}" class="alert alert-error">
+                <span class="alert-icon">❌</span>
+                <span th:text="${error}">Wystąpił błąd</span>
+            </div>
+
+            <!-- FORM -->
+            <form th:action="${subcategoryDTO.id != null ? '/admin/subcategories/' + subcategoryDTO.id : '/admin/subcategories'}"
+                  method="post"
+                  th:object="${subcategoryDTO}"
+                  enctype="multipart/form-data">
+
+                <!-- VALIDATION ERRORS - PRZENIESIONE DO ŚRODKA FORMULARZA -->
+                <div th:if="${#fields.hasErrors('*')}" class="alert alert-error" style="margin-bottom: 20px;">
+                    <span class="alert-icon">❌</span>
+                    <div>
+                        <strong>Formularz zawiera błędy:</strong>
+                        <ul style="margin: 5px 0 0 20px;">
+                            <li th:each="err : ${#fields.errors('*')}" th:text="${err}">Błąd walidacji</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>📝 Podstawowe informacje</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-grid">
+                            <!-- Kategoria nadrzędna -->
+                            <div class="form-group">
+                                <label for="categoryId" class="form-label required">Kategoria nadrzędna</label>
+                                <select id="categoryId"
+                                        th:field="*{categoryId}"
+                                        class="form-control"
+                                        th:classappend="${#fields.hasErrors('categoryId')} ? 'is-invalid' : ''"
+                                        required>
+                                    <option value="">-- Wybierz kategorię --</option>
+                                    <option th:each="cat : ${categories}"
+                                            th:value="${cat.id}"
+                                            th:text="${cat.icon + ' ' + cat.name}">
+                                        Kategoria
+                                    </option>
+                                </select>
+                                <span th:if="${#fields.hasErrors('categoryId')}"
+                                      th:errors="*{categoryId}"
+                                      class="error-message">Błąd</span>
+                            </div>
+
+                            <!-- Nazwa -->
+                            <div class="form-group">
+                                <label for="name" class="form-label required">Nazwa subkategorii</label>
+                                <input type="text"
+                                       id="name"
+                                       th:field="*{name}"
+                                       class="form-control"
+                                       th:classappend="${#fields.hasErrors('name')} ? 'is-invalid' : ''"
+                                       placeholder="np. Karma sucha"
+                                       required>
+                                <span th:if="${#fields.hasErrors('name')}"
+                                      th:errors="*{name}"
+                                      class="error-message">Błąd</span>
+                            </div>
+
+                            <!-- Slug -->
+                            <div class="form-group">
+                                <label for="slug" class="form-label required">Slug (URL)</label>
+                                <div style="display: flex; gap: 10px;">
+                                    <input type="text"
+                                           id="slug"
+                                           th:field="*{slug}"
+                                           class="form-control"
+                                           th:classappend="${#fields.hasErrors('slug')} ? 'is-invalid' : ''"
+                                           placeholder="karma-sucha"
+                                           required
+                                           style="flex: 1;">
+                                    <button type="button"
+                                            class="btn btn-secondary"
+                                            onclick="generateSlugFromName()"
+                                            title="Wygeneruj slug z nazwy">
+                                        🔄
+                                    </button>
+                                </div>
+                                <small class="form-text">Używany w adresie URL. Tylko małe litery, cyfry i myślniki. Kliknij 🔄 aby wygenerować z nazwy.</small>
+                                <span th:if="${#fields.hasErrors('slug')}"
+                                      th:errors="*{slug}"
+                                      class="error-message">Błąd</span>
+                            </div>
+
+                            <!-- Ikona -->
+                            <div class="form-group">
+                                <label for="icon" class="form-label">Ikona (emoji)</label>
+                                <input type="text"
+                                       id="icon"
+                                       th:field="*{icon}"
+                                       class="form-control"
+                                       th:classappend="${#fields.hasErrors('icon')} ? 'is-invalid' : ''"
+                                       placeholder="🍖"
+                                       maxlength="10">
+                                <small class="form-text">
+                                    Emoji reprezentujące subkategorię.
+                                    <a href="https://emojipedia.org/" target="_blank">Wybierz emoji</a>
+                                </small>
+                                <span th:if="${#fields.hasErrors('icon')}"
+                                      th:errors="*{icon}"
+                                      class="error-message">Błąd</span>
+                            </div>
+
+                            <!-- Opis -->
+                            <div class="form-group full-width">
+                                <label for="description" class="form-label">Opis</label>
+                                <textarea id="description"
+                                          th:field="*{description}"
+                                          class="form-control"
+                                          th:classappend="${#fields.hasErrors('description')} ? 'is-invalid' : ''"
+                                          rows="3"
+                                          placeholder="Krótki opis subkategorii..."></textarea>
+                                <span th:if="${#fields.hasErrors('description')}"
+                                      th:errors="*{description}"
+                                      class="error-message">Błąd</span>
+                            </div>
+
+                            <!-- Kolejność wyświetlania -->
+                            <div class="form-group">
+                                <label for="displayOrder" class="form-label">Kolejność wyświetlania</label>
+                                <input type="number"
+                                       id="displayOrder"
+                                       th:field="*{displayOrder}"
+                                       class="form-control"
+                                       th:classappend="${#fields.hasErrors('displayOrder')} ? 'is-invalid' : ''"
+                                       min="0"
+                                       placeholder="0">
+                                <small class="form-text">Niższe wartości wyświetlają się wcześniej</small>
+                                <span th:if="${#fields.hasErrors('displayOrder')}"
+                                      th:errors="*{displayOrder}"
+                                      class="error-message">Błąd</span>
+                            </div>
+
+                            <!-- Status aktywności -->
+                            <div class="form-group">
+                                <label class="form-label">Status</label>
+                                <div class="form-check">
+                                    <label class="switch">
+                                        <input type="checkbox" th:field="*{active}">
+                                        <span class="switch-slider"></span>
+                                    </label>
+                                    <span style="margin-left: 10px;">Aktywna (widoczna w sklepie)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Obrazek -->
+                <div class="card" style="margin-top: 20px;">
+                    <div class="card-header">
+                        <h3>🖼️ Obrazek subkategorii</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label for="imageFile" class="form-label">Wybierz obrazek</label>
+                            <input type="file"
+                                   id="imageFile"
+                                   name="imageFile"
+                                   class="form-control"
+                                   accept="image/*"
+                                   onchange="previewImage(event)">
+                            <small class="form-text">Format: JPG, PNG, WEBP. Max rozmiar: 5MB</small>
+                        </div>
+
+                        <!-- Podgląd aktualnego obrazka -->
+                        <div th:if="${subcategoryDTO.imageUrl != null}" style="margin-top: 15px;">
+                            <label class="form-label">Aktualny obrazek:</label>
+                            <div style="margin-top: 10px;">
+                                <img th:src="${subcategoryDTO.imageUrl}"
+                                     alt="Aktualny obrazek"
+                                     id="currentImage"
+                                     style="max-width: 200px; max-height: 200px; border: 1px solid #ddd; border-radius: 8px;">
+                            </div>
+                        </div>
+
+                        <!-- Podgląd nowego obrazka -->
+                        <div id="imagePreviewContainer" style="margin-top: 15px; display: none;">
+                            <label class="form-label">Podgląd nowego obrazka:</label>
+                            <div style="margin-top: 10px;">
+                                <img id="imagePreview"
+                                     alt="Podgląd obrazka"
+                                     style="max-width: 200px; max-height: 200px; border: 1px solid #ddd; border-radius: 8px;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Przyciski -->
+                <div class="form-actions" style="margin-top: 20px;">
+                    <button type="submit" class="btn btn-primary">
+                        <span th:if="${subcategoryDTO.id != null}">💾 Zapisz zmiany</span>
+                        <span th:unless="${subcategoryDTO.id != null}">➕ Dodaj subkategorię</span>
+                    </button>
+                    <a th:href="@{/admin/subcategories/category/{id}(id=${subcategoryDTO.categoryId})}"
+                       th:if="${subcategoryDTO.categoryId != null}"
+                       class="btn btn-secondary">Anuluj</a>
+                    <a th:href="@{/admin/categories}"
+                       th:unless="${subcategoryDTO.categoryId != null}"
+                       class="btn btn-secondary">Anuluj</a>
+                </div>
+            </form>
+        </div>
+    </main>
+</div>
+
+<style>
+    /* Dodatkowe zmienne CSS dla kompatybilności */
+    :root {
+        --text-primary: var(--text-dark, #333333);
+    }
+
+    .alert {
+        padding: 16px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    .alert-success {
+        background: var(--success-bg, #d4edda);
+        color: var(--success-text, #155724);
+        border: 1px solid #d1fae5;
+    }
+    .alert-error {
+        background: var(--error-bg, #f8d7da);
+        color: var(--error-text, #721c24);
+        border: 1px solid #fee2e2;
+    }
+    .alert-icon {
+        font-size: 18px;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-group.full-width {
+        grid-column: 1 / -1;
+    }
+
+    .form-label {
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: var(--text-primary);
+    }
+
+    .form-label.required::after {
+        content: " *";
+        color: var(--error-text, #dc3545);
+    }
+
+    .form-control {
+        padding: 10px 12px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: border-color 0.2s;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--brand-green, #4caf50);
+        box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+    }
+
+    .form-control.is-invalid {
+        border-color: var(--error-text, #dc3545);
+    }
+
+    .form-text {
+        font-size: 12px;
+        color: var(--text-muted, #6c757d);
+        margin-top: 4px;
+    }
+
+    .error-message {
+        color: var(--error-text, #dc3545);
+        font-size: 12px;
+        margin-top: 4px;
+    }
+
+    .form-check {
+        display: flex;
+        align-items: center;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 10px;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+
+    @media (max-width: 768px) {
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<script>
+    // Podgląd obrazka
+    function previewImage(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('imagePreview');
+                const container = document.getElementById('imagePreviewContainer');
+                preview.src = e.target.result;
+                container.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    // Funkcja do generowania slug z nazwy (wywoływana przyciskiem)
+    function generateSlugFromName() {
+        const nameInput = document.getElementById('name');
+        const slugInput = document.getElementById('slug');
+
+        if (nameInput && slugInput && nameInput.value) {
+            const slug = nameInput.value
+                .toLowerCase()
+                .replace(/ą/g, 'a').replace(/ć/g, 'c').replace(/ę/g, 'e')
+                .replace(/ł/g, 'l').replace(/ń/g, 'n').replace(/ó/g, 'o')
+                .replace(/ś/g, 's').replace(/ź|ż/g, 'z')
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '');
+            slugInput.value = slug;
+
+            // Pokaż feedback
+            slugInput.style.borderColor = '#4caf50';
+            setTimeout(() => {
+                slugInput.style.borderColor = '';
+            }, 1000);
+        }
+    }
+
+    // Auto-hide alerts
+    setTimeout(function() {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(alert => {
+            alert.style.transition = 'opacity 0.5s';
+            alert.style.opacity = '0';
+            setTimeout(() => alert.remove(), 500);
+        });
+    }, 5000);
+</script>
+</body>
+</html>

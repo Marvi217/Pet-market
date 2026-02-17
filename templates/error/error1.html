@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Strona błędu</title>
+</head>
+<body>
+<div class="error-container">
+    <div class="error-header">
+        <h1>Coś poszło nie tak!</h1>
+        <p>Wystąpił błąd podczas przetwarzania Twojego żądania</p>
+    </div>
+
+    <div class="error-content">
+        <table>
+            <tr>
+                <td>Data</td>
+                <td th:text="${timestamp}">-</td>
+            </tr>
+            <tr>
+                <td>Ścieżka</td>
+                <td th:text="${path}">-</td>
+            </tr>
+            <tr>
+                <td>Błąd</td>
+                <td th:text="${error}">-</td>
+            </tr>
+            <tr>
+                <td>Status</td>
+                <td th:text="${status}">-</td>
+            </tr>
+            <tr>
+                <td>Komunikat</td>
+                <td th:text="${message}">-</td>
+            </tr>
+            <tr>
+                <td>Wyjątek</td>
+                <td th:text="${exception}">-</td>
+            </tr>
+            <tr>
+                <td>Ślad stosu</td>
+                <td>
+                    <pre th:text="${trace}">-</pre>
+                </td>
+            </tr>
+        </table>
+
+        <a href="/static">Powrót do strony głównej</a>
+    </div>
+</div>
+</body>
+</html>

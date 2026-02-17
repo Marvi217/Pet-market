@@ -1,0 +1,55 @@
+<aside th:fragment="sidebar(activePage)" class="account-sidebar">
+    <div class="menu-section">
+        <div class="menu-title">Moje konto</div>
+
+        <a th:href="@{/account}"
+           class="menu-item" th:classappend="${activePage == 'dashboard' ? 'active' : ''}">
+            <span class="menu-icon">🏠</span>
+            <span>Panel główny</span>
+        </a>
+
+        <a th:href="@{/account/orders}"
+           class="menu-item" th:classappend="${activePage == 'orders' ? 'active' : ''}">
+            <span class="menu-icon">📦</span>
+            <span>Moje zamówienia</span>
+        </a>
+
+        <a th:href="@{/account/wishlist}"
+           class="menu-item" th:classappend="${activePage == 'wishlist' ? 'active' : ''}">
+            <span class="menu-icon">❤️</span>
+            <span>Lista życzeń</span>
+        </a>
+    </div>
+
+    <div class="menu-section">
+        <div class="menu-title">Ustawienia</div>
+
+        <a th:href="@{/account/profile}"
+           class="menu-item" th:classappend="${activePage == 'profile' ? 'active' : ''}">
+            <span class="menu-icon">👤</span>
+            <span>Dane osobowe</span>
+        </a>
+
+        <!-- ✅ NOWA SEKCJA - Adresy -->
+        <a th:href="@{/account/addresses}"
+           class="menu-item" th:classappend="${activePage == 'addresses' ? 'active' : ''}">
+            <span class="menu-icon">📍</span>
+            <span>Adresy dostawy</span>
+        </a>
+
+        <a th:href="@{/account/security}"
+           class="menu-item" th:classappend="${activePage == 'security' ? 'active' : ''}">
+            <span class="menu-icon">🔒</span>
+            <span>Bezpieczeństwo</span>
+        </a>
+    </div>
+
+    <div class="menu-section">
+        <form th:action="@{/logout}" method="post">
+            <button type="submit" class="menu-item" style="color: #ef4444; background: none; border: none; width: 100%; text-align: left; cursor: pointer; font-family: inherit;">
+                <span class="menu-icon">🚪</span>
+                <span>Wyloguj</span>
+            </button>
+        </form>
+    </div>
+</aside>

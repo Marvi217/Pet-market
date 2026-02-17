@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/admin-fragments :: admin-head('Promocje')}"></head>
+<body>
+<div class="admin-wrapper">
+    <aside th:replace="~{fragments/admin-fragments :: sidebar('promotions')}"></aside>
+
+    <main class="admin-main">
+        <div class="admin-content">
+            <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+            <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+            <div class="breadcrumb">
+                <a th:href="@{/admin/dashboard}">Dashboard</a>
+                <span class="breadcrumb-separator">›</span>
+                <span>Promocje</span>
+            </div>
+
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">🎁 Promocje i Rabaty</h1>
+                    <p class="page-subtitle">Zarządzaj kampaniami zniżkowymi w sklepie</p>
+                </div>
+                <div class="page-actions">
+                    <a th:href="@{/admin/promotions/new}" class="btn btn-primary">➕ Nowa promocja</a>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="table-container">
+                    <table class="admin-table">
+                        <thead>
+                        <tr>
+                            <th>Nazwa</th>
+                            <th>Typ</th>
+                            <th>Wartość</th>
+                            <th>Kod</th>
+                            <th>Ważność</th>
+                            <th>Status</th>
+                            <th class="actions-col">Akcje</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="promo : ${promotions}">
+                            <td><strong th:text="${promo.name}"></strong></td>
+                            <td th:text="${promo.discountType}"></td>
+                            <td>
+                                <span th:text="${#numbers.formatDecimal(promo.discountValue, 1, 0)}"></span>
+                                <span th:text="${promo.discountType.name() == 'PERCENTAGE' ? '%' : 'zł'}"></span>
+                            </td>
+                            <td><code th:text="${promo.code ?: '-'}"></code></td>
+                            <td>
+                                <div style="font-size: 12px;">
+                                    Od: <span th:text="${#temporals.format(promo.startDate, 'dd.MM.yy')}"></span><br>
+                                    Do: <span th:text="${#temporals.format(promo.endDate, 'dd.MM.yy')}"></span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge" th:classappend="${promo.active ? 'badge-success' : 'badge-secondary'}"
+                                      th:text="${promo.active ? 'Aktywna' : 'Nieaktywna'}"></span>
+                            </td>
+                            <td class="actions-col">
+                                <div class="action-buttons">
+                                    <a th:href="@{/admin/promotions/edit/{id}(id=${promo.id})}" class="action-btn edit">✏️</a>
+                                    <form th:action="@{/admin/promotions/delete/{id}(id=${promo.id})}" method="post" onsubmit="return confirm('Usunąć promocję?')">
+                                        <button type="submit" class="action-btn delete">🗑️</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>

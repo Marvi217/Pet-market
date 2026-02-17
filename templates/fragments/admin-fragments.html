@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head th:fragment="admin-head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title} + ' - Panel Administracyjny PetMarket'">PetMarket</title>
+    <link rel="stylesheet" th:href="@{/css/admin-styles.css}">
+</head>
+
+<body>
+<aside th:fragment="sidebar(activeSection)" class="admin-sidebar">
+    <div class="sidebar-header">
+        <a th:href="@{/admin/main/dashboard}" class="sidebar-logo">
+            <span class="sidebar-logo-icon">🐾</span>
+            <div>
+                <span class="sidebar-logo-text">PetMarket</span>
+                <span class="sidebar-logo-sub">Panel Admina</span>
+            </div>
+        </a>
+    </div>
+
+    <nav class="sidebar-nav">
+        <div class="nav-section">
+            <div class="nav-section-title">Menu główne</div>
+            <a th:href="@{/admin/main/dashboard}" class="nav-item" th:classappend="${activeSection == 'dashboard' ? 'active' : ''}">
+                <span class="nav-item-icon">📊</span> Dashboard
+            </a>
+            <a th:href="@{/admin/orders}" class="nav-item" th:classappend="${activeSection == 'orders' ? 'active' : ''}">
+                <span class="nav-item-icon">📦</span> Zamówienia
+                <span class="nav-item-badge" th:if="${pendingOrdersCount > 0}" th:text="${pendingOrdersCount}">12</span>
+            </a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Katalog</div>
+            <a th:href="@{/admin/products}" class="nav-item" th:classappend="${activeSection == 'products' ? 'active' : ''}">
+                <span class="nav-item-icon">🛍️</span> Produkty
+            </a>
+            <a th:href="@{/admin/categories}" class="nav-item" th:classappend="${activeSection == 'categories' ? 'active' : ''}">
+                <span class="nav-item-icon">📁</span> Kategorie
+            </a>
+            <a th:href="@{/admin/subcategories}" class="nav-item nav-item-sub" th:classappend="${activeSection == 'subcategories' ? 'active' : ''}">
+                <span class="nav-item-icon">📂</span> Subkategorie
+            </a>
+            <a th:href="@{/admin/brands}" class="nav-item" th:classappend="${activeSection == 'brands' ? 'active' : ''}">
+                <span class="nav-item-icon">🏷️</span> Marki
+            </a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Marketing</div>
+            <a th:href="@{/admin/promotions}" class="nav-item" th:classappend="${activeSection == 'promotions' ? 'active' : ''}">
+                <span class="nav-item-icon">🎁</span> Promocje
+            </a>
+            <a th:href="@{/admin/reviews}" class="nav-item" th:classappend="${activeSection == 'reviews' ? 'active' : ''}">
+                <span class="nav-item-icon">⭐</span> Recenzje
+            </a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Użytkownicy</div>
+            <a th:href="@{/admin/users}" class="nav-item" th:classappend="${activeSection == 'users' ? 'active' : ''}">
+                <span class="nav-item-icon">👥</span> Klienci
+            </a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">System</div>
+            <a th:href="@{/admin/settings}" class="nav-item" th:classappend="${activeSection == 'settings' ? 'active' : ''}">
+                <span class="nav-item-icon">⚙️</span> Ustawienia
+            </a>
+            <form th:action="@{/logout}" method="post" id="logoutForm" style="display: block;">
+                <button type="submit" class="nav-item" style="background:none; border:none; width:100%; text-align:left; cursor:pointer; color: inherit; font-family: inherit;">
+                    <span class="nav-item-icon">🚪</span> Wyloguj
+                </button>
+            </form>
+        </div>
+    </nav>
+</aside>
+
+<header th:fragment="admin-topbar" class="admin-topbar">
+    <div class="topbar-left">
+        <div class="topbar-search">
+            <span class="topbar-search-icon">🔍</span>
+            <input type="text" placeholder="Szukaj...">
+        </div>
+    </div>
+    <div class="topbar-right">
+        <div class="topbar-user" th:if="${currentUser}">
+            <div class="user-avatar" th:text="${#strings.substring(currentUser.firstName,0,1) + #strings.substring(currentUser.lastName,0,1)}">AK</div>
+            <div class="user-info">
+                <div class="user-name" th:text="${currentUser.firstName + ' ' + currentUser.lastName}">Admin Kowalski</div>
+                <div class="user-role">Administrator</div>
+            </div>
+        </div>
+        <div class="topbar-user" th:unless="${currentUser}">
+            <div class="user-avatar">??</div>
+            <div class="user-info">
+                <div class="user-name">Nieznany Użytkownik</div>
+                <div class="user-role">Brak sesji</div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<style>
+    /* Styl dla podmenu/subkategorii */
+    .nav-item-sub {
+        padding-left: 45px;
+        font-size: 14px;
+        position: relative;
+    }
+
+    .nav-item-sub::before {
+        content: "↳";
+        position: absolute;
+        left: 25px;
+        opacity: 0.5;
+    }
+
+    .nav-item-sub .nav-item-icon {
+        font-size: 16px;
+    }
+</style>
+</body>
+</html>

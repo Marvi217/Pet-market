@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <title>Wszystkie subkategorie - Panel Administracyjny PetMarket</title>
+    <link rel="stylesheet" href="/css/admin-styles.css">
+</head>
+<body>
+<div class="admin-wrapper">
+    <!-- SIDEBAR -->
+    <div th:replace="~{fragments/admin-fragments :: sidebar('subcategories')}"></div>
+
+    <!-- MAIN CONTENT -->
+    <main class="admin-main">
+        <!-- PAGE CONTENT -->
+        <div class="admin-content">
+            <!-- BREADCRUMB -->
+            <div class="breadcrumb">
+                <a th:href="@{/admin/dashboard}">Dashboard</a>
+                <span class="breadcrumb-separator">›</span>
+                <a th:href="@{/admin/categories}">Kategorie</a>
+                <span class="breadcrumb-separator">›</span>
+                <span>Wszystkie subkategorie</span>
+            </div>
+
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">Wszystkie subkategorie</h1>
+                    <p class="page-subtitle">Zarządzaj wszystkimi subkategoriami w systemie</p>
+                </div>
+                <div class="page-actions">
+                    <a th:href="@{/admin/categories}" class="btn btn-secondary">← Powrót do kategorii</a>
+                    <a th:href="@{/admin/subcategories/new}" class="btn btn-primary">+ Dodaj subkategorię</a>
+                </div>
+            </div>
+
+            <!-- ALERTS -->
+            <div th:if="${success}" class="alert alert-success">
+                <span class="alert-icon">✅</span>
+                <span th:text="${success}">Operacja zakończona pomyślnie</span>
+            </div>
+
+            <div th:if="${error}" class="alert alert-error">
+                <span class="alert-icon">❌</span>
+                <span th:text="${error}">Wystąpił błąd</span>
+            </div>
+
+            <!-- FILTERS -->
+            <div class="card" style="margin-bottom: 20px;">
+                <div class="card-body">
+                    <form th:action="@{/admin/subcategories}" method="get" style="display: flex; gap: 10px; align-items: center;">
+                        <input type="text"
+                               name="search"
+                               th:value="${search}"
+                               placeholder="Szukaj subkategorii..."
+                               class="form-control"
+                               style="flex: 1;">
+
+                        <select name="categoryId" class="form-control" style="width: auto; min-width: 200px;">
+                            <option value="">Wszystkie kategorie</option>
+                            <option th:each="cat : ${categories}"
+                                    th:value="${cat.id}"
+                                    th:text="${cat.name}"
+                                    th:selected="${categoryId != null && categoryId == cat.id}">
+                                Kategoria
+                            </option>
+                        </select>
+
+                        <button type="submit" class="btn btn-primary">Szukaj</button>
+                        <a th:href="@{/admin/subcategories}" class="btn btn-secondary">Wyczyść</a>
+                    </form>
+                </div>
+            </div>
+
+            <!-- SUBCATEGORIES TABLE -->
+            <div class="card">
+                <div class="card-body" style="padding: 0;">
+                    <div class="table-container">
+                        <table class="admin-table">
+                            <thead>
+                            <tr>
+                                <th>Ikona</th>
+                                <th>Nazwa</th>
+                                <th>Kategoria</th>
+                                <th>Slug</th>
+                                <th>Produkty</th>
+                                <th>Status</th>
+                                <th class="actions-col">Akcje</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:if="${subcategories.isEmpty()}">
+                                <td colspan="7" style="text-align: center; padding: 40px;">
+                                    <p style="color: var(--text-muted);">Brak subkategorii</p>
+                                </td>
+                            </tr>
+                            <tr th:each="subcategory : ${subcategories}">
+                                <td style="font-size: 24px;" th:text="${subcategory.icon}">🐕</td>
+                                <td>
+                                    <strong th:text="${subcategory.name}">Nazwa</strong>
+                                </td>
+                                <td>
+                                    <span th:text="${subcategory.category.name}">Kategoria</span>
+                                </td>
+                                <td>
+                                    <code th:text="${subcategory.slug}">slug</code>
+                                </td>
+                                <td>
+                                    <span th:text="${subcategory.products != null ? subcategory.products.size() : 0}">0</span> produktów
+                                </td>
+                                <td>
+                                    <label class="switch">
+                                        <input type="checkbox"
+                                               th:checked="${subcategory.active}"
+                                               th:attr="data-subcategory-id=${subcategory.id}"
+                                               onchange="toggleActive(this)">
+                                        <span class="switch-slider"></span>
+                                    </label>
+                                </td>
+                                <td class="actions-col">
+                                    <div class="action-buttons">
+                                        <a th:href="@{/admin/subcategories/{id}/edit(id=${subcategory.id})}"
+                                           class="action-btn edit"
+                                           title="Edytuj">✏️</a>
+                                        <a th:href="@{/admin/categories/{id}/subcategories(id=${subcategory.category.id})}"
+                                           class="action-btn view"
+                                           title="Pokaż w kategorii">👁️</a>
+                                    </div>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer" th:if="${!subcategories.isEmpty()}">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>
+                            Wyświetlono
+                            <span th:text="${subcategories.numberOfElements}">0</span> z
+                            <span th:text="${subcategories.totalElements}">0</span> subkategorii
+                        </span>
+                        <div class="pagination">
+                            <a th:href="@{/admin/subcategories(page=${currentPage - 1}, size=${subcategories.size})}"
+                               th:classappend="${currentPage == 0} ? 'disabled' : ''"
+                               class="pagination-item">← Poprzednia</a>
+
+                            <span th:each="i : ${#numbers.sequence(0, totalPages - 1)}" th:if="${totalPages > 1}">
+                                <a th:href="@{/admin/subcategories(page=${i}, size=${subcategories.size})}"
+                                   th:text="${i + 1}"
+                                   th:classappend="${i == currentPage} ? 'active' : ''"
+                                   class="pagination-item">1</a>
+                            </span>
+
+                            <a th:href="@{/admin/subcategories(page=${currentPage + 1}, size=${subcategories.size})}"
+                               th:classappend="${currentPage >= totalPages - 1} ? 'disabled' : ''"
+                               class="pagination-item">Następna →</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script th:inline="javascript">
+    // Pobierz CSRF token
+    const token = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+    const header = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+
+    // Toggle active status via AJAX
+    function toggleActive(checkbox) {
+        const subcategoryId = checkbox.getAttribute('data-subcategory-id');
+        const isActive = checkbox.checked;
+
+        fetch('/admin/subcategories/' + subcategoryId + '/toggle-active', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                [header]: token
+            }
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.text();
+            })
+            .then(data => {
+                if (data !== 'success') {
+                    checkbox.checked = !isActive;
+                    alert('Nie udało się zmienić statusu subkategorii: ' + data);
+                } else {
+                    // Pokaż krótki feedback
+                    const row = checkbox.closest('tr');
+                    row.style.backgroundColor = '#d4edda';
+                    setTimeout(() => {
+                        row.style.backgroundColor = '';
+                    }, 500);
+                }
+            })
+            .catch(error => {
+                checkbox.checked = !isActive;
+                console.error('Error:', error);
+                alert('Wystąpił błąd podczas zmiany statusu');
+            });
+    }
+
+    // Auto-hide success/error alerts after 5 seconds
+    setTimeout(function() {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(alert => {
+            alert.style.transition = 'opacity 0.5s';
+            alert.style.opacity = '0';
+            setTimeout(() => alert.remove(), 500);
+        });
+    }, 5000);
+</script>
+</body>
+</html>

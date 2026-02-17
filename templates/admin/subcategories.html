@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subkategorie - Panel Administracyjny PetMarket</title>
+    <link rel="stylesheet" href="/css/admin-styles.css">
+</head>
+<body>
+<div class="admin-wrapper">
+    <div th:replace="~{fragments/admin-fragments :: sidebar('subcategories')}"></div>
+    <!-- MAIN CONTENT -->
+    <main class="admin-main">
+        <header class="admin-topbar">
+            <div class="topbar-left">
+                <div class="topbar-search">
+                    <span class="topbar-search-icon">🔍</span>
+                    <input type="text" placeholder="Szukaj subkategorii...">
+                </div>
+            </div>
+            <div class="topbar-right">
+                <div class="topbar-user">
+                    <div class="user-avatar">A</div>
+                    <div class="user-info">
+                        <div class="user-name">Administrator</div>
+                        <div class="user-role">Super Admin</div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="admin-content">
+            <div class="breadcrumb">
+                <a href="dashboard.html">Dashboard</a>
+                <span class="breadcrumb-separator">›</span>
+                <a href="categories.html">Kategorie</a>
+                <span class="breadcrumb-separator">›</span>
+                <span>🐕 Psy - Subkategorie</span>
+            </div>
+
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">🐕 Subkategorie: Psy</h1>
+                    <p class="page-subtitle">Zarządzaj subkategoriami w kategorii Psy</p>
+                </div>
+                <div class="page-actions">
+                    <a href="categories.html" class="btn btn-secondary">← Powrót</a>
+                    <a href="admin-subcategory-form.html?category=1" class="btn btn-primary">+ Dodaj subkategorię</a>
+                </div>
+            </div>
+
+            <!-- PARENT INFO -->
+            <div class="card" style="margin-bottom: 20px;">
+                <div class="card-body">
+                    <div style="display: flex; align-items: center; gap: 20px;">
+                        <div style="font-size: 48px;">🐕</div>
+                        <div>
+                            <h3 style="margin: 0 0 5px 0;">Psy</h3>
+                            <p style="margin: 0; color: var(--text-muted);">Wszystko dla Twojego psa</p>
+                            <p style="margin: 5px 0 0 0;">
+                                <span class="badge badge-success">Aktywna</span>
+                                <span style="margin-left: 10px; color: var(--text-muted);">156 produktów • 4 subkategorie</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUBCATEGORIES TABLE -->
+            <div class="card">
+                <div class="card-body" style="padding: 0;">
+                    <table class="admin-table">
+                        <thead>
+                        <tr>
+                            <th>Ikona</th>
+                            <th>Nazwa</th>
+                            <th>Slug</th>
+                            <th>Produkty</th>
+                            <th>Status</th>
+                            <th class="actions-col">Akcje</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td style="font-size: 28px;">🦴</td>
+                            <td><strong>Karma</strong></td>
+                            <td><code>psy-karma</code></td>
+                            <td>45</td>
+                            <td>
+                                <label class="switch">
+                                    <input type="checkbox" checked>
+                                    <span class="switch-slider"></span>
+                                </label>
+                            </td>
+                            <td class="actions-col">
+                                <div class="action-buttons">
+                                    <a href="admin-subcategory-form.html?id=1" class="action-btn edit" title="Edytuj">✏️</a>
+                                    <button class="action-btn delete" title="Usuń">🗑️</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="font-size: 28px;">🎾</td>
+                            <td><strong>Zabawki</strong></td>
+                            <td><code>psy-zabawki</code></td>
+                            <td>38</td>
+                            <td>
+                                <label class="switch">
+                                    <input type="checkbox" checked>
+                                    <span class="switch-slider"></span>
+                                </label>
+                            </td>
+                            <td class="actions-col">
+                                <div class="action-buttons">
+                                    <a href="admin-subcategory-form.html?id=2" class="action-btn edit" title="Edytuj">✏️</a>
+                                    <button class="action-btn delete" title="Usuń">🗑️</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="font-size: 28px;">🦮</td>
+                            <td><strong>Akcesoria</strong></td>
+                            <td><code>psy-akcesoria</code></td>
+                            <td>52</td>
+                            <td>
+                                <label class="switch">
+                                    <input type="checkbox" checked>
+                                    <span class="switch-slider"></span>
+                                </label>
+                            </td>
+                            <td class="actions-col">
+                                <div class="action-buttons">
+                                    <a href="admin-subcategory-form.html?id=3" class="action-btn edit" title="Edytuj">✏️</a>
+                                    <button class="action-btn delete" title="Usuń">🗑️</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="font-size: 28px;">💊</td>
+                            <td><strong>Suplementy</strong></td>
+                            <td><code>psy-suplementy</code></td>
+                            <td>21</td>
+                            <td>
+                                <label class="switch">
+                                    <input type="checkbox" checked>
+                                    <span class="switch-slider"></span>
+                                </label>
+                            </td>
+                            <td class="actions-col">
+                                <div class="action-buttons">
+                                    <a href="admin-subcategory-form.html?id=4" class="action-btn edit" title="Edytuj">✏️</a>
+                                    <button class="action-btn delete" title="Usuń">🗑️</button>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>

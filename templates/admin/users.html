@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments/admin-fragments :: admin-head('Klienci')}"></head>
+<body>
+<div class="admin-wrapper">
+    <aside th:replace="~{admin/fragments/admin-fragments :: sidebar('users')}"></aside>
+
+    <main class="admin-main">
+        <header th:replace="~{admin/fragments/admin-fragments :: admin-topbar}"></header>
+
+        <div class="admin-content">
+            <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+            <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+            <div class="breadcrumb">
+                <a th:href="@{/admin/main/dashboard}">Dashboard</a>
+                <span class="breadcrumb-separator">›</span>
+                <span>Klienci</span>
+            </div>
+
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">👥 Klienci sklepu</h1>
+                    <p class="page-subtitle">Zarządzaj kontami użytkowników</p>
+                </div>
+                <div class="page-actions">
+                    <button class="btn btn-secondary">📥 Eksportuj CSV</button>
+                    <a th:href="@{/admin/users/new}" class="btn btn-primary">➕ Dodaj klienta</a>
+                </div>
+            </div>
+
+            <div class="stats-grid" style="margin-bottom: 25px;">
+                <div class="stat-card">
+                    <div class="stat-icon green">👥</div>
+                    <div class="stat-info">
+                        <h3 th:text="${totalUsersCount}">0</h3>
+                        <p>Wszyscy klienci</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon blue">✅</div>
+                    <div class="stat-info">
+                        <h3 th:text="${verifiedUsersCount}">0</h3>
+                        <p>Zweryfikowani</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon orange">🎯</div>
+                    <div class="stat-info">
+                        <h3 th:text="${activeLastMonthCount}">0</h3>
+                        <p>Aktywni (30 dni)</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon purple">⭐</div>
+                    <div class="stat-info">
+                        <h3 th:text="${vipUsersCount}">0</h3>
+                        <p>VIP</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body" style="padding: 0;">
+                    <div class="table-container">
+                        <table class="admin-table">
+                            <thead>
+                            <tr>
+                                <th class="checkbox-col"><input type="checkbox" id="selectAll"></th>
+                                <th>Klient</th>
+                                <th>Email</th>
+                                <th>Data rejestracji</th>
+                                <th>Zamówienia</th>
+                                <th>Status</th>
+                                <th class="actions-col">Akcje</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="user : ${users.content}">
+                                <td><input type="checkbox" name="userIds" th:value="${user.id}"></td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 12px;">
+                                        <div class="user-avatar" style="width: 40px; height: 40px; font-size: 14px;"
+                                             th:text="${#strings.substring(user.firstName,0,1) + #strings.substring(user.lastName,0,1)}">JK</div>
+                                        <div>
+                                            <strong th:text="${user.firstName + ' ' + user.lastName}">Jan Kowalski</strong>
+                                            <span th:if="${user.orders != null && user.orders.size() > 10}"
+                                                  class="badge badge-warning" style="margin-left: 8px; font-size: 10px;">⭐ VIP</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td th:text="${user.email}">email@example.com</td>
+                                <td th:text="${#temporals.format(user.createdAt, 'yyyy-MM-dd')}">2025-03-15</td>
+                                <td><strong th:text="${user.orders != null ? user.orders.size() : 0}">0</strong></td>
+                                <td>
+                                    <span class="badge"
+                                          th:classappend="${user.enabled ? 'badge-success' : 'badge-danger'}"
+                                          th:text="${user.enabled ? 'Aktywny' : 'Zablokowany'}">
+                                    </span>
+                                </td>
+                                <td class="actions-col">
+                                    <div class="action-buttons">
+                                        <a th:href="@{/admin/users/view/{id}(id=${user.id})}" class="action-btn view" title="Podgląd">👁️</a>
+                                        <a th:href="@{/admin/users/edit/{id}(id=${user.id})}" class="action-btn edit" title="Edytuj">✏️</a>
+
+                                        <form th:action="@{/admin/users/toggle-status/{id}(id=${user.id})}" method="post" style="display: inline;">
+                                            <button type="submit" class="action-btn" th:title="${user.enabled ? 'Zablokuj' : 'Odblokuj'}"
+                                                    th:text="${user.enabled ? '🔒' : '🔓'}"></button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr th:if="${users.totalElements == 0}">
+                                <td colspan="7" style="text-align: center; padding: 20px;">Brak klientów w bazie.</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card-footer" th:if="${users.totalPages > 1}">
+                    <div class="pagination">
+                        <a th:href="@{/admin/users(page=${users.number - 1})}"
+                           class="pagination-item" th:classappend="${users.first ? 'disabled' : ''}">‹ Poprzednia</a>
+
+                        <th:block th:each="i : ${#numbers.sequence(0, users.totalPages - 1)}">
+                            <a th:href="@{/admin/users(page=${i})}"
+                               class="pagination-item" th:classappend="${users.number == i ? 'active' : ''}" th:text="${i + 1}"></a>
+                        </th:block>
+
+                        <a th:href="@{/admin/users(page=${users.number + 1})}"
+                           class="pagination-item" th:classappend="${users.last ? 'disabled' : ''}">Następna ›</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    // Obsługa zaznaczania wszystkich
+    document.getElementById('selectAll').addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('input[name="userIds"]');
+        checkboxes.forEach(cb => cb.checked = this.checked);
+    });
+</script>
+</body>
+</html>
