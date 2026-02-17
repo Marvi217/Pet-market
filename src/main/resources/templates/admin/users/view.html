@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'Użytkownik: ' + ${user.firstName} + ' ' + ${user.lastName} + ' - Panel Admina'">Szczegóły Użytkownika</title>
+    <link rel="stylesheet" th:href="@{/css/admin-styles.css}">
+</head>
+<body>
+<div class="admin-wrapper">
+    <aside th:replace="~{fragments/admin-fragments :: sidebar('users')}"></aside>
+
+    <main class="admin-main">
+        <div class="admin-content">
+            <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <div>
+                    <h1 class="page-title" th:text="'👤 ' + ${user.firstName} + ' ' + ${user.lastName}">Użytkownik</h1>
+                    <p class="page-subtitle" th:text="${user.email}">email@example.com</p>
+                </div>
+                <div class="page-actions">
+                    <a th:href="@{/admin/users}" class="btn btn-secondary" style="text-decoration: none; padding: 10px 15px; background: #6c757d; color: white; border-radius: 5px;">← Powrót do listy</a>
+                </div>
+            </div>
+
+            <div th:if="${success}" class="alert alert-success" th:text="${success}" style="margin-bottom: 20px; padding: 15px; background: #d4edda; color: #155724; border-radius: 8px;"></div>
+            <div th:if="${error}" class="alert alert-danger" th:text="${error}" style="margin-bottom: 20px; padding: 15px; background: #f8d7da; color: #721c24; border-radius: 8px;"></div>
+
+            
+            <div class="card" style="margin-bottom: 20px; background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                <div class="card-body" style="padding: 20px;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                        <div>
+                            <strong style="color: #666; font-size: 12px; text-transform: uppercase;">Status</strong>
+                            <p>
+                                <span th:if="${!user.active}" style="color: #dc3545; display: flex; align-items: center; gap: 5px;">
+                                    <span style="width: 8px; height: 8px; background: #dc3545; border-radius: 50%;"></span> Zablokowany
+                                </span>
+                                <span th:if="${user.active && !user.enabled}" style="color: #ffc107; display: flex; align-items: center; gap: 5px;">
+                                    <span style="width: 8px; height: 8px; background: #ffc107; border-radius: 50%;"></span> Niepotwierdzony
+                                </span>
+                                <span th:if="${user.active && user.enabled}" style="color: #28a745; display: flex; align-items: center; gap: 5px;">
+                                    <span style="width: 8px; height: 8px; background: #28a745; border-radius: 50%;"></span> Aktywny
+                                </span>
+                            </p>
+                        </div>
+                        <div>
+                            <strong style="color: #666; font-size: 12px; text-transform: uppercase;">Rola</strong>
+                            <p th:text="${user.role}">USER</p>
+                        </div>
+                        <div>
+                            <strong style="color: #666; font-size: 12px; text-transform: uppercase;">Telefon</strong>
+                            <p th:text="${user.phone != null ? user.phone : 'Brak'}">-</p>
+                        </div>
+                        <div>
+                            <strong style="color: #666; font-size: 12px; text-transform: uppercase;">Data rejestracji</strong>
+                            <p th:text="${#temporals.format(user.createdAt, 'dd.MM.yyyy HH:mm')}">01.01.2024</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            
+            <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
+                <div class="stat-card" style="background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                    <div style="font-size: 24px; font-weight: bold; color: #28a745;" th:text="${orderStats.orderCount}">0</div>
+                    <div style="color: #666; font-size: 14px;">Zamówienia</div>
+                </div>
+                <div class="stat-card" style="background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                    <div style="font-size: 24px; font-weight: bold; color: #007bff;" th:text="${#numbers.formatDecimal(orderStats.totalSpent, 1, 2)} + ' zł'">0.00 zł</div>
+                    <div style="color: #666; font-size: 14px;">Wydano łącznie</div>
+                </div>
+                <div class="stat-card" style="background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                    <div style="font-size: 24px; font-weight: bold; color: #6c757d;" th:text="${#numbers.formatDecimal(orderStats.averageValue, 1, 2)} + ' zł'">0.00 zł</div>
+                    <div style="color: #666; font-size: 14px;">Średnia wartość zamówienia</div>
+                </div>
+                <div class="stat-card" style="background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                    <div style="font-size: 24px; font-weight: bold; color: #ffc107;" th:text="${reviews.totalElements}">0</div>
+                    <div style="color: #666; font-size: 14px;">Recenzje</div>
+                </div>
+            </div>
+
+            
+            <div class="card" style="margin-bottom: 20px; background: #fff; border-radius: 8px; overflow: hidden;">
+                <div class="card-header" style="padding: 15px 20px; border-bottom: 1px solid #eee;">
+                    <h2 style="margin: 0; font-size: 18px;">📦 Historia zamówień</h2>
+                </div>
+                <div class="table-container">
+                    <table class="admin-table" style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                        <tr style="background: #f8f9fa; border-bottom: 2px solid #eee; text-align: left;">
+                            <th style="padding: 15px;">Nr</th>
+                            <th>Data</th>
+                            <th>Status</th>
+                            <th>Płatność</th>
+                            <th>Wartość</th>
+                            <th style="text-align: right; padding-right: 15px;">Akcje</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="order : ${orders.content}" style="border-bottom: 1px solid #f4f4f4;">
+                            <td style="padding: 15px;">
+                                <strong th:text="'#' + ${order.id}">#1</strong>
+                            </td>
+                            <td th:text="${#temporals.format(order.orderDate, 'dd.MM.yyyy HH:mm')}">01.01.2024</td>
+                            <td>
+                                <span th:text="${order.status.displayName}"
+                                      style="padding: 4px 8px; border-radius: 4px; font-size: 11px;"
+                                      th:style="${order.status.name() == 'DELIVERED'} ? 'background: #d4edda; color: #155724; padding: 4px 8px; border-radius: 4px; font-size: 11px;' : (${order.status.name() == 'CANCELLED'} ? 'background: #f8d7da; color: #721c24; padding: 4px 8px; border-radius: 4px; font-size: 11px;' : 'background: #fff3cd; color: #856404; padding: 4px 8px; border-radius: 4px; font-size: 11px;')">
+                                    Status
+                                </span>
+                            </td>
+                            <td>
+                                <span th:text="${order.paymentStatus.displayName}"
+                                      style="padding: 4px 8px; border-radius: 4px; font-size: 11px;"
+                                      th:style="${order.paymentStatus.name() == 'PAID'} ? 'background: #d4edda; color: #155724; padding: 4px 8px; border-radius: 4px; font-size: 11px;' : (${order.paymentStatus.name() == 'FAILED'} ? 'background: #f8d7da; color: #721c24; padding: 4px 8px; border-radius: 4px; font-size: 11px;' : 'background: #e1f5fe; color: #01579b; padding: 4px 8px; border-radius: 4px; font-size: 11px;')">
+                                    Status płatności
+                                </span>
+                            </td>
+                            <td style="font-weight: bold; color: #28a745;" th:text="${#numbers.formatDecimal(order.totalAmount, 1, 2)} + ' zł'">0.00 zł</td>
+                            <td style="text-align: right; padding-right: 15px;">
+                                <a th:href="@{/admin/orders/{id}(id=${order.id})}" class="btn btn-sm" style="text-decoration: none; padding: 5px 10px; background: #007bff; color: white; border-radius: 4px; font-size: 12px;">Szczegóły</a>
+                            </td>
+                        </tr>
+                        <tr th:if="${orders.totalElements == 0}">
+                            <td colspan="6" style="text-align: center; padding: 50px; color: #999;">Brak zamówień.</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            
+            <div class="card" style="background: #fff; border-radius: 8px; overflow: hidden;">
+                <div class="card-header" style="padding: 15px 20px; border-bottom: 1px solid #eee;">
+                    <h2 style="margin: 0; font-size: 18px;">⭐ Recenzje i komentarze</h2>
+                </div>
+                <div class="table-container">
+                    <table class="admin-table" style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                        <tr style="background: #f8f9fa; border-bottom: 2px solid #eee; text-align: left;">
+                            <th style="padding: 15px;">Produkt</th>
+                            <th>Ocena</th>
+                            <th>Komentarz</th>
+                            <th>Data</th>
+                            <th>Status</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="review : ${reviews.content}" style="border-bottom: 1px solid #f4f4f4;">
+                            <td style="padding: 15px;">
+                                <div style="font-weight: 600;" th:text="${review.product.name}">Produkt</div>
+                            </td>
+                            <td>
+                                <span th:each="i : ${#numbers.sequence(1, review.rating)}" style="color: #ffc107;">★</span>
+                                <span th:each="i : ${#numbers.sequence(review.rating + 1, 5)}" style="color: #ddd;">★</span>
+                                <span style="margin-left: 5px; color: #666;" th:text="'(' + ${review.rating} + '/5)'"></span>
+                            </td>
+                            <td style="max-width: 300px;">
+                                <p th:text="${review.comment}" style="margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Komentarz</p>
+                            </td>
+                            <td th:text="${#temporals.format(review.createdAt, 'dd.MM.yyyy HH:mm')}">01.01.2024</td>
+                            <td>
+                                <span th:text="${review.status}"
+                                      style="padding: 4px 8px; border-radius: 4px; font-size: 11px;"
+                                      th:style="${review.status.name() == 'APPROVED'} ? 'background: #d4edda; color: #155724; padding: 4px 8px; border-radius: 4px; font-size: 11px;' : (${review.status.name() == 'REJECTED'} ? 'background: #f8d7da; color: #721c24; padding: 4px 8px; border-radius: 4px; font-size: 11px;' : 'background: #fff3cd; color: #856404; padding: 4px 8px; border-radius: 4px; font-size: 11px;')">
+                                    Status
+                                </span>
+                            </td>
+                        </tr>
+                        <tr th:if="${reviews.totalElements == 0}">
+                            <td colspan="5" style="text-align: center; padding: 50px; color: #999;">Brak recenzji.</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>

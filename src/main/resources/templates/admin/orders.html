@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zamówienia - Panel Administracyjny PetMarket</title>
+    <link rel="stylesheet" href="/css/admin-styles.css">
+</head>
+<body>
+<div class="admin-wrapper">
+    <div th:replace="~{fragments/admin-fragments :: sidebar('orders')}"></div>
+
+    <main class="admin-main">
+        <header th:replace="~{fragments/admin-fragments :: admin-topbar}"></header>
+
+        <div class="admin-content">
+            <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+            <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+            <div class="breadcrumb">
+                <a th:href="@{/admin/dashboard}">Dashboard</a>
+                <span class="breadcrumb-separator">›</span>
+                <span>Zamówienia</span>
+            </div>
+
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">Zamówienia</h1>
+                    <p class="page-subtitle">Zarządzaj zamówieniami klientów</p>
+                </div>
+                <div class="page-actions">
+                    <a th:href="@{/admin/orders/export}" class="btn btn-secondary">📥 Eksportuj CSV</a>
+                </div>
+            </div>
+
+            <div class="stats-grid" style="margin-bottom: 25px;">
+                <div class="stat-card">
+                    <div class="stat-icon orange">⏳</div>
+                    <div class="stat-info">
+                        <h3 th:text="${pendingOrdersCount}">0</h3>
+                        <p>Oczekujące</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon blue">🔄</div>
+                    <div class="stat-info">
+                        <h3 th:text="${processingOrdersCount}">0</h3>
+                        <p>W realizacji</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon purple">📮</div>
+                    <div class="stat-info">
+                        <h3 th:text="${shippedOrdersCount}">0</h3>
+                        <p>Wysłane</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon green">✅</div>
+                    <div class="stat-info">
+                        <h3 th:text="${completedOrdersCount}">0</h3>
+                        <p>Zrealizowane</p>
+                    </div>
+                </div>
+            </div>
+
+            <form th:action="@{/admin/orders}" method="get" class="filter-bar">
+                <select name="status" class="form-control">
+                    <option value="">Wszystkie statusy</option>
+                    <option th:each="status : ${T(com.example.petmarket.enums.OrderStatus).values()}"
+                            th:value="${status}"
+                            th:text="${status.displayName}"
+                            th:selected="${selectedStatus == status}"></option>
+                </select>
+                <input type="date" name="from" th:value="${dateFrom}" class="form-control" placeholder="Data od">
+                <input type="date" name="to" th:value="${dateTo}" class="form-control" placeholder="Data do">
+
+                <button type="submit" class="btn btn-primary">Filtruj</button>
+                <a th:href="@{/admin/orders}" class="btn btn-secondary">🔄 Resetuj</a>
+            </form>
+
+            <div class="card">
+                <div class="card-body" style="padding: 0;">
+                    <div class="table-container">
+                        <table class="admin-table">
+                            <thead>
+                            <tr>
+                                <th class="checkbox-col"><input type="checkbox"></th>
+                                <th>Numer</th>
+                                <th>Klient</th>
+                                <th>Data</th>
+                                <th>Wartość</th>
+                                <th>Płatność</th>
+                                <th>Status</th>
+                                <th class="actions-col">Akcje</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="order : ${orders.content}">
+                                <td><label>
+                                    <input type="checkbox" name="orderIds" th:value="${order.id}">
+                                </label></td>
+                                <td><strong th:text="${order.orderNumber}">#0000</strong></td>
+                                <td>
+                                    <div>
+                                        <strong th:text="${order.customerName}">Imię Nazwisko</strong><br>
+                                        <small style="color: var(--text-muted);" th:text="${order.customerEmail}">email@example.com</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span th:text="${#temporals.format(order.orderDate, 'yyyy-MM-dd')}"></span><br>
+                                    <small style="color: var(--text-muted);" th:text="${#temporals.format(order.orderDate, 'HH:mm')}"></small>
+                                </td>
+                                <td><strong th:text="${#numbers.formatDecimal(order.totalAmount, 1, 2, 'COMMA') + ' zł'}">0.00 zł</strong></td>
+                                <td>
+                                <span class="badge"
+                                      th:classappend="${'badge-' + order.paymentStatus.color}"
+                                      th:text="${order.paymentStatus.displayName}">Status</span>
+                                                        </td>
+                                                        <td>
+                                <span class="badge"
+                                      th:classappend="${'badge-' + order.status.color}"
+                                      th:text="${order.status.displayName}">Status</span>
+                                </td>
+                                <td class="actions-col">
+                                    <div class="action-buttons">
+                                        <a th:href="@{/admin/orders/{id}(id=${order.id})}" class="action-btn view">👁️</a>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr th:if="${orders.isEmpty()}">
+                                <td colspan="8" style="text-align: center; padding: 20px;">Brak zamówień do wyświetlenia</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card-footer" th:if="${orders.totalPages > 1}">
+                    <div class="pagination">
+                        <a th:href="@{/admin/orders(page=${orders.number - 1}, status=${selectedStatus})}"
+                           class="pagination-item" th:classappend="${orders.first ? 'disabled' : ''}">‹ Poprzednia</a>
+
+                        <a th:each="i : ${#numbers.sequence(0, orders.totalPages - 1)}"
+                           th:href="@{/admin/orders(page=${i}, status=${selectedStatus})}"
+                           th:text="${i + 1}"
+                           class="pagination-item"
+                           th:classappend="${i == orders.number ? 'active' : ''}"></a>
+
+                        <a th:href="@{/admin/orders(page=${orders.number + 1}, status=${selectedStatus})}"
+                           class="pagination-item" th:classappend="${orders.last ? 'disabled' : ''}">Następna ›</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="#{payment.gateway.title} ?: 'Symulacja płatności - PetMarket'">Symulacja płatności - PetMarket</title>
+    <link rel="stylesheet" href="/css/public-styles.css">
+    <style>
+        :root {
+            --brand-green: #2d5a3f;
+            --bg-light: #f9fafb;
+            --text-dark: #333333;
+        }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg-light);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .payment-card {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            max-width: 500px;
+            width: 100%;
+        }
+        .payment-icon {
+            font-size: 50px;
+            margin-bottom: 20px;
+        }
+        .order-info {
+            background: #f5f5f5;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        .order-info h3 {
+            margin: 0 0 10px 0;
+            color: var(--brand-green);
+            font-size: 16px;
+        }
+        .order-info p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #666;
+        }
+        .order-info .total {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--brand-green);
+            margin-top: 10px;
+        }
+        .payment-title {
+            font-size: 24px;
+            color: var(--text-dark);
+            margin: 0 0 10px 0;
+        }
+        .payment-subtitle {
+            color: #888;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+        .payment-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 25px;
+        }
+        .btn-payment {
+            display: block;
+            padding: 14px 24px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 16px;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-success {
+            background: var(--brand-green);
+            color: white;
+        }
+        .btn-success:hover {
+            background: #1e3f2c;
+        }
+        .btn-failed {
+            background: #dc3545;
+            color: white;
+        }
+        .btn-failed:hover {
+            background: #b02a37;
+        }
+        .btn-cancel {
+            background: transparent;
+            color: #666;
+            border: 1px solid #ddd;
+        }
+        .btn-cancel:hover {
+            background: #f5f5f5;
+        }
+        .simulation-notice {
+            background: #fff3cd;
+            color: #856404;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+<div class="payment-card">
+    <div class="payment-icon">💳</div>
+    <h1 class="payment-title" th:text="#{payment.gateway.header} ?: 'Bramka płatności'">Bramka płatności</h1>
+    <p class="payment-subtitle" th:text="#{payment.gateway.subtitle} ?: 'Symulacja systemu płatności'">Symulacja systemu płatności</p>
+    <div class="order-info">
+        <h3 th:text="#{payment.gateway.order.details} ?: 'Szczegóły zamówienia'">Szczegóły zamówienia</h3>
+        <p><strong th:text="#{order.number} ?: 'Numer zamówienia'">Numer zamówienia</strong>: <span th:text="${order.orderNumber}">ORD-12345</span></p>
+        <p><strong th:text="#{payment.gateway.payment.method} ?: 'Metoda płatności'">Metoda płatności</strong>: <span th:text="${order.paymentMethod?.displayName} ?: ${order.paymentMethod}">Karta</span></p>
+        <p class="total"><span th:text="#{cart.order.total} ?: 'Do zapłaty'">Do zapłaty</span>: <span th:text="${#numbers.formatDecimal(order.totalAmount, 1, 2)} + ' zł'">0.00 zł</span></p>
+    </div>
+    <div class="payment-buttons">
+        <form th:action="@{/checkout/payment/simulate}" method="post" style="display: contents;">
+            <input type="hidden" name="orderNumber" th:value="${order.orderNumber}">
+            <input type="hidden" name="status" value="PAID">
+            <button type="submit" class="btn-payment btn-success" th:text="#{payment.gateway.success} ?: '✓ Zapłacono (symulacja sukcesu)'">
+                Zapłacono (symulacja sukcesu)
+            </button>
+        </form>
+        <form th:action="@{/checkout/payment/simulate}" method="post" style="display: contents;">
+            <input type="hidden" name="orderNumber" th:value="${order.orderNumber}">
+            <input type="hidden" name="status" value="FAILED">
+            <button type="submit" class="btn-payment btn-failed" th:text="#{payment.gateway.failed} ?: '✗ Płatność nieudana (symulacja błędu)'">
+                Płatność nieudana (symulacja błędu)
+            </button>
+        </form>
+        <form th:action="@{/checkout/payment/simulate}" method="post" style="display: contents;">
+            <input type="hidden" name="orderNumber" th:value="${order.orderNumber}">
+            <input type="hidden" name="status" value="CANCELLED">
+            <button type="submit" class="btn-payment btn-cancel" th:text="#{payment.gateway.cancel} ?: 'Anuluj płatność'">
+                Anuluj płatność
+            </button>
+        </form>
+    </div>
+</div>
+</body>
+</html>

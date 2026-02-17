@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="#{wishlist.title}">Ulubione produkty - PetMarket</title>
+    <link rel="stylesheet" href="/css/account-styles.css">
+    <link rel="stylesheet" href="/css/public-styles.css">
+    <style>
+        .content-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 15px; }
+        .btn-clear-all { padding: 10px 20px; border: 2px solid var(--accent-orange); background: white; color: var(--accent-orange); border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.3s; text-decoration: none; display: inline-block; }
+        .btn-clear-all:hover { background: var(--accent-orange); color: white; }
+        .wishlist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
+        .product-card { background: white; border-radius: 12px; overflow: hidden; border: 1px solid #eee; position: relative; transition: all 0.3s; }
+        .product-card:hover { box-shadow: 0 8px 25px rgba(0,0,0,0.12); transform: translateY(-3px); }
+        .product-badge { position: absolute; top: 12px; right: 12px; background: var(--accent-orange); color: white; padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: 700; z-index: 2; }
+        .remove-wishlist-btn { position: absolute; top: 12px; left: 12px; background: white; border: none; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 2; }
+        .remove-wishlist-btn .heart { font-size: 20px; color: #ef4444; }
+        .remove-wishlist-btn:hover { transform: scale(1.1); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .product-image { width: 100%; height: 200px; display: flex; align-items: center; justify-content: center; background: #f9fafb; font-size: 80px; }
+        .product-info { padding: 15px; }
+        .product-rating { display: flex; align-items: center; gap: 5px; margin-bottom: 8px; font-size: 13px; }
+        .stars { position: relative; display: inline-block; color: #d1d5db; }
+        .filled-stars { position: absolute; top: 0; left: 0; overflow: hidden; color: #fbbf24; white-space: nowrap; }
+        .empty-stars { color: #d1d5db; }
+        .rating-count { color: var(--text-muted); font-size: 12px; }
+        .product-name { font-size: 16px; font-weight: 600; margin: 0 0 8px 0; color: var(--text-dark); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .product-desc { font-size: 13px; color: var(--text-muted); margin: 0 0 15px 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .product-footer { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .product-price { font-size: 20px; font-weight: bold; color: var(--brand-green); }
+        .old-price { font-size: 14px; color: var(--text-muted); text-decoration: line-through; display: block; margin-bottom: 2px; }
+        .btn-add-cart { padding: 8px 16px; background: var(--brand-green); color: white; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.3s; white-space: nowrap; }
+        .btn-add-cart:hover { background: #1e4230; transform: translateY(-1px); }
+        .btn-browse { display: inline-block; padding: 12px 30px; background: var(--brand-green); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; transition: all 0.3s; }
+        .btn-browse:hover { background: #1e4230; transform: translateY(-2px); }
+        @media (max-width: 968px) { .wishlist-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; } .content-header { flex-direction: column; align-items: flex-start; } }
+    </style>
+</head>
+<body>
+
+<div th:replace="~{fragments/header :: navbar}"></div>
+<div th:replace="~{fragments/header :: categoryBar}"></div>
+
+<div class="account-container">
+    <aside th:replace="~{fragments/account-sidebar :: sidebar('wishlist')}"></aside>
+
+    <main class="account-content">
+        <div class="content-header">
+            <div>
+                <h1 class="content-title" th:text="#{wishlist.header}">Ulubione produkty</h1>
+                <p class="content-subtitle">
+                    <span th:text="${products.size()}">0</span>
+                    <span th:if="${products.size() == 1}" th:text="#{wishlist.count.singular}">produkt</span>
+                    <span th:if="${products.size() > 1 and products.size() < 5}" th:text="#{wishlist.count.few}">produkty</span>
+                    <span th:if="${products.size() >= 5}" th:text="#{wishlist.count.many}">produktów</span>
+                </p>
+            </div>
+
+            <form th:if="${!products.isEmpty()}"
+                  th:action="@{/wishlist/clear}"
+                  method="post"
+                  th:attr="onsubmit='return confirm(\'' + #{wishlist.confirm.clear} + '\')'"
+                  style="display: inline;">
+                <button type="submit" class="btn-clear-all" th:text="#{wishlist.clear}">Wyczyść wszystko</button>
+            </form>
+        </div>
+
+        <div class="wishlist-grid" th:if="${!products.isEmpty()}">
+            <div th:each="product : ${products}" class="product-card">
+
+                <button type="button"
+                        class="remove-wishlist-btn"
+                        th:attr="data-product-id=${product.id}"
+                        onclick="handleRemoveFromWishlist(this, event)"
+                        th:title="#{wishlist.remove}">
+                    <span class="heart">♥</span>
+                </button>
+
+                <div class="product-badge"
+                     th:if="${product.hasDiscount and !product.buyXGetYPromotion and product.discountPercent > 0}"
+                     th:text="${'-' + product.discountPercent + '%'}">-25%</div>
+                <div class="product-badge"
+                     th:if="${product.buyXGetYPromotion}"
+                     th:text="'%'">%</div>
+
+                <a th:href="@{/product/{id}(id=${product.id})}" style="text-decoration: none; color: inherit; display: block;">
+                    <div class="product-image">
+                        <img th:if="${product.mainImageUrl != null and (product.mainImageUrl.startsWith('/') or product.mainImageUrl.startsWith('http'))}"
+                             th:src="${product.mainImageUrl}" th:alt="${product.name}"
+                             style="max-width: 100%; max-height: 150px; object-fit: contain;">
+                        <span th:unless="${product.mainImageUrl != null and (product.mainImageUrl.startsWith('/') or product.mainImageUrl.startsWith('http'))}"
+                              style="font-size: 48px;" th:text="${product.mainImageUrl != null ? product.mainImageUrl : '🦴'}">🦴</span>
+                    </div>
+
+                    <div class="product-info">
+                        <div class="product-rating">
+                            <span class="stars">
+                                <span class="filled-stars" th:style="'width: ' + ${product.rating * 20} + '%'">★★★★★</span>
+                                <span class="empty-stars">★★★★★</span>
+                            </span>
+                            <span class="rating-count" th:text="'(' + ${product.reviewCount} + ')'">(0)</span>
+                        </div>
+
+                        <h3 class="product-name" th:text="${product.name}">Nazwa produktu</h3>
+
+                        <p class="product-desc" th:text="${product.shortDescription}">Krótki opis</p>
+
+                        <div class="product-footer">
+                            <div>
+                                <span class="old-price"
+                                      th:if="${product.hasDiscount and !product.buyXGetYPromotion and product.oldPrice != null}"
+                                      th:text="${#numbers.formatDecimal(product.oldPrice, 1, 2)} + ' ' + #{general.currency}">
+                                    0.00 zł
+                                </span>
+
+                                <span class="product-price"
+                                      th:text="${#numbers.formatDecimal(product.price, 1, 2)} + ' ' + #{general.currency}">
+                                    0.00 zł
+                                </span>
+                            </div>
+
+                            <form class="add-to-cart-form" style="display: inline;" onsubmit="event.preventDefault();" th:if="${product.available}">
+                                <input type="hidden" name="productId" th:value="${product.id}">
+                                <input type="hidden" name="quantity" value="1">
+
+                                <button type="button" class="btn-add-cart"
+                                        onclick="handleAddToCart(this, event)"
+                                        th:text="#{home.add.to.cart}">
+                                    Do koszyka
+                                </button>
+                            </form>
+                            <span th:unless="${product.available}"
+                                  class="sold-out-badge"
+                                  style="background: #fee2e2; color: #dc2626; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: 600;"
+                                  th:text="${product.unavailableMessage}">
+                                Produkt niedostępny
+                            </span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <div class="empty-state" th:if="${products.isEmpty()}">
+            <div class="empty-icon">♥</div>
+            <h2 class="empty-title" th:text="#{wishlist.empty}">Brak ulubionych produktów</h2>
+            <p class="empty-text" th:text="#{wishlist.empty.message}">Dodaj produkty do ulubionych...</p>
+            <a th:href="@{/}" class="btn-browse" th:text="#{wishlist.browse}">Przeglądaj produkty</a>
+        </div>
+    </main>
+</div>
+
+<script src="/js/cart.js"></script>
+<script th:inline="javascript">
+    const messages = {
+        confirmRemove: /*[[#{wishlist.confirm.remove}]]*/ 'Czy na pewno chcesz usunąć ten produkt z ulubionych?',
+        removed: /*[[#{wishlist.removed}]]*/ 'Usunięto z ulubionych',
+        error: /*[[#{wishlist.error}]]*/ 'Wystąpił błąd',
+        countSingular: /*[[#{wishlist.count.singular}]]*/ 'produkt',
+        countFew: /*[[#{wishlist.count.few}]]*/ 'produkty',
+        countMany: /*[[#{wishlist.count.many}]]*/ 'produktów'
+    };
+
+    function handleRemoveFromWishlist(button, event) {
+        event.stopPropagation();
+
+        const productId = button.getAttribute('data-product-id');
+        const productCard = button.closest('.product-card');
+
+        if (!confirm(messages.confirmRemove)) {
+            return;
+        }
+
+        productCard.style.opacity = '0.5';
+        button.disabled = true;
+
+        fetch('/wishlist/toggle', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ productId: productId })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    productCard.style.transition = 'all 0.3s ease';
+                    productCard.style.transform = 'scale(0.8)';
+                    productCard.style.opacity = '0';
+
+                    setTimeout(() => {
+                        productCard.remove();
+
+                        const remainingProducts = document.querySelectorAll('.product-card').length;
+                        if (remainingProducts === 0) {
+                            location.reload();
+                        } else {
+                            const subtitle = document.querySelector('.content-subtitle');
+                            if (subtitle) {
+                                const count = remainingProducts;
+                                let text = count + ' ';
+                                if (count === 1) text += messages.countSingular;
+                                else if (count < 5) text += messages.countFew;
+                                else text += messages.countMany;
+                                subtitle.textContent = text;
+                            }
+                        }
+
+                        showToast(messages.removed);
+                    }, 300);
+                } else {
+                    productCard.style.opacity = '1';
+                    button.disabled = false;
+                    showToast(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                productCard.style.opacity = '1';
+                button.disabled = false;
+                showToast(messages.error, 'error');
+            });
+    }
+
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${type === 'success' ? '#10b981' : '#ef4444'};
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 9999;
+        animation: slideIn 0.3s ease;
+    `;
+        toast.textContent = message;
+
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => toast.remove(), 300);
+        }, 2000);
+    }
+
+    const style = document.createElement('style');
+    style.textContent = `
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideOut {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
+    }
+`;
+    document.head.appendChild(style);
+</script>
+
+</body>
+</html>

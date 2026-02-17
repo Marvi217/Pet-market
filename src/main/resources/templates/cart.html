@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="#{cart.title} + ' - PetMarket'">Koszyk - PetMarket</title>
+    <link rel="stylesheet" href="/css/public-styles.css">
+</head>
+<body>
+<div th:replace="~{fragments/header :: navbar}"></div>
+<div th:replace="~{fragments/header :: categoryBar}"></div>
+
+
+<div class="breadcrumb">
+    <a th:href="@{/}" th:text="#{breadcrumb.home}">Strona główna</a> /
+    <span th:text="#{cart.title}">Koszyk</span>
+</div>
+
+
+<div class="container">
+    <h1 class="page-title" th:text="#{cart.title}">Koszyk</h1>
+
+    
+    <div th:if="${cart == null or cart.items.isEmpty()}" class="empty-cart">
+        <div class="empty-icon">🛒</div>
+        <h2 th:text="#{cart.empty}">Twój koszyk jest pusty</h2>
+        <a th:href="@{/}" class="btn-primary" th:text="#{cart.empty.cta}">Przejdź do sklepu</a>
+    </div>
+
+    
+    <div th:if="${cart != null and !cart.items.isEmpty()}" class="cart-layout">
+
+        
+        <div class="cart-items">
+            <div class="cart-header">
+                <div th:text="#{cart.product}">Produkt</div>
+                <div th:text="#{cart.price}">Cena</div>
+                <div th:text="#{cart.quantity}">Ilość</div>
+                <div th:text="#{cart.total}">Suma</div>
+                <div></div>
+            </div>
+
+            <div th:each="item : ${cart.items}" class="cart-item">
+                <div class="item-product">
+                    <div class="item-image">
+                        <img th:if="${item.product.mainImageUrl != null and (item.product.mainImageUrl.startsWith('/') or item.product.mainImageUrl.startsWith('http'))}"
+                             th:src="${item.product.mainImageUrl}" th:alt="${item.product.name}">
+                        <span th:unless="${item.product.mainImageUrl != null and (item.product.mainImageUrl.startsWith('/') or item.product.mainImageUrl.startsWith('http'))}"
+                              th:text="${item.product.mainImageUrl != null ? item.product.mainImageUrl : '🦴'}">🦴</span>
+                    </div>
+                    <div class="item-details">
+                        <h3 class="item-name" th:text="${item.product.name}">Nazwa produktu</h3>
+                        <p class="item-brand" th:if="${item.product.brand != null and item.product.brand.name != null}"
+                           th:text="${item.product.brand.name}">Marka</p>
+                    </div>
+                </div>
+
+                <div class="item-price" th:data-label="#{cart.price} + ':'">
+                    
+                    <span class="promo-badge" th:if="${item.promoApplied}"
+                          th:text="${item.product.buyXGetYDescription}">Kup 2 dostań 1 gratis</span>
+                    
+                    <span class="promo-hint" th:if="${item.product.buyXGetYPromotion and !item.promoApplied}"
+                          th:text="'Dodaj ' + ${item.product.buyXGetYTotalQuantity - item.quantity} + ' więcej dla promocji'">Dodaj więcej dla promocji</span>
+                    
+                    <span class="old-price" th:if="${item.product.hasDiscount and !item.product.buyXGetYPromotion}"
+                          th:text="${#numbers.formatDecimal(item.product.oldPrice, 1, 2)} + ' ' + #{general.currency}">0.00 zł</span>
+                    <span class="current-price"
+                          th:text="${#numbers.formatDecimal(item.price, 1, 2)} + ' ' + #{general.currency}">0.00 zł</span>
+                </div>
+
+                <div class="item-quantity">
+                    <div class="quantity-form">
+                        <button type="button" class="qty-btn" th:data-product-id="${item.product.id}" th:data-action="decrease" onclick="updateCartQuantity(this)">−</button>
+                        <input type="number" th:value="${item.quantity}" min="1" th:max="${item.product.stockQuantity}"
+                               th:data-stock="${item.product.stockQuantity}" readonly class="qty-input">
+                        <button type="button" class="qty-btn" th:data-product-id="${item.product.id}" th:data-action="increase"
+                                th:data-stock="${item.product.stockQuantity}" th:data-current="${item.quantity}"
+                                th:disabled="${item.quantity >= item.product.stockQuantity}"
+                                onclick="updateCartQuantity(this)">+</button>
+                    </div>
+                    <div th:if="${item.quantity >= item.product.stockQuantity}" class="stock-limit-warning"
+                         style="font-size: 11px; color: #dc2626; margin-top: 4px;"
+                         th:text="#{cart.max.quantity}">
+                        Maksymalna ilość
+                    </div>
+                </div>
+
+                <div class="item-total" th:data-label="#{cart.total} + ':'"
+                     th:text="${#numbers.formatDecimal(item.totalPrice, 1, 2)} + ' ' + #{general.currency}">0.00 zł</div>
+
+                <div class="item-actions">
+                    <a th:href="@{/cart/remove/{id}(id=${item.product.id})}" class="btn-remove" th:title="#{cart.remove}">
+                        🗑️
+                    </a>
+                </div>
+            </div>
+
+            
+            <div class="cart-actions">
+                <button type="button" class="btn-secondary" onclick="clearCart()" th:text="#{cart.clear}">Wyczyść koszyk</button>
+                <a th:href="@{/}" class="btn-outline" th:text="#{cart.continue}">Kontynuuj zakupy</a>
+            </div>
+        </div>
+
+        
+        <div class="cart-summary">
+            <h2 th:text="#{cart.summary}">Podsumowanie</h2>
+
+            
+            <div class="summary-products">
+                <div th:each="item : ${cart.items}" class="summary-product-row">
+                    <div class="summary-product-info">
+                        <span class="summary-product-name" th:text="${item.product.name}">Produkt</span>
+                        <span class="summary-product-qty" th:text="'× ' + ${item.quantity}">× 1</span>
+                    </div>
+                    <div class="summary-product-prices">
+                        
+                        <span th:if="${item.product.hasDiscount and !item.product.buyXGetYPromotion}" class="summary-original-price"
+                              th:text="${#numbers.formatDecimal(item.product.oldPrice * item.quantity, 1, 2)} + ' ' + #{general.currency}">0.00 zł</span>
+                        
+                        <span class="summary-product-price" th:text="${#numbers.formatDecimal(item.totalPrice, 1, 2)} + ' ' + #{general.currency}">0.00 zł</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="summary-row">
+                <span th:text="#{cart.subtotal}">Wartość produktów</span>
+                <span th:text="${#numbers.formatDecimal(cart.subtotal, 1, 2)} + ' ' + #{general.currency}">0.00 zł</span>
+            </div>
+
+            
+            <div th:if="${cart.totalDiscount != null and cart.totalDiscount > 0}" class="summary-row summary-discount">
+                <span th:text="#{cart.discount}">Upust</span>
+                <span th:text="'-' + ${#numbers.formatDecimal(cart.totalDiscount, 1, 2)} + ' ' + #{general.currency}">-0.00 zł</span>
+            </div>
+
+            <div class="summary-row">
+                <span th:text="#{cart.delivery}">Dostawa</span>
+                <span th:if="${cart.deliveryCost > 0}"
+                      th:text="${#numbers.formatDecimal(cart.deliveryCost, 1, 2)} + ' ' + #{general.currency}">15.00 zł</span>
+                <span th:if="${cart.deliveryCost == 0}" th:text="#{cart.free}">Gratis</span>
+            </div>
+
+            <div class="summary-total">
+                <span th:text="#{cart.order.total}">Do zapłaty</span>
+                <span th:text="${#numbers.formatDecimal(cart.totalAmount, 1, 2)} + ' ' + #{general.currency}">0.00 zł</span>
+            </div>
+
+            <a th:href="@{/checkout}" class="btn-checkout" th:text="#{cart.checkout}">
+                Przejdź do kasy
+            </a>
+        </div>
+    </div>
+</div>
+
+
+<footer>
+    <p th:text="#{footer.copyright}">&copy; 2026 PetMarket - Wszystkie prawa zastrzeżone</p>
+</footer>
+
+<script th:inline="javascript">
+    const stockLimitMessage = /*[[#{cart.stock.limit.warning}]]*/ 'You cannot order more than {0} units of this product';
+
+    function updateCartQuantity(button) {
+        const productId = button.getAttribute('data-product-id');
+        const action = button.getAttribute('data-action');
+
+        // Check stock limit for increase action
+        if (action === 'increase') {
+            const stock = parseInt(button.getAttribute('data-stock')) || 99;
+            const current = parseInt(button.getAttribute('data-current')) || 0;
+            if (current >= stock) {
+                alert(stockLimitMessage.replace('{0}', stock));
+                return;
+            }
+        }
+
+        button.disabled = true;
+
+        const params = new URLSearchParams();
+        params.append('productId', productId);
+        params.append('action', action);
+
+        fetch('/cart/update', {
+            method: 'POST',
+            body: params,
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Reload the page to show updated cart
+                    window.location.reload();
+                } else {
+                    alert(data.message || 'Wystąpił błąd');
+                    button.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                button.disabled = false;
+            });
+    }
+
+    function clearCart() {
+        if (!confirm('Czy na pewno chcesz wyczyścić koszyk?')) {
+            return;
+        }
+
+        fetch('/cart/clear-async', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert(data.message || 'Wystąpił błąd');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Wystąpił błąd podczas czyszczenia koszyka');
+            });
+    }
+</script>
+
+</body>
+</html>

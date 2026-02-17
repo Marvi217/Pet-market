@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <title th:text="#{checkout.title}">Kasa - PetMarket</title>
+    <link rel="stylesheet" href="/css/public-styles.css">
+
+    <link rel="stylesheet" href="https://geowidget.easypack24.net/css/easypack.css"/>
+    <script src="https://geowidget.easypack24.net/js/sdk-for-javascript.js" async></script>
+    <style>
+        .inpost-map-container {
+            display: none;
+            margin-top: 15px;
+            padding: 20px;
+            background: #fffdf5;
+            border-radius: 12px;
+            border: 2px solid #ffcd00;
+        }
+
+        .inpost-map-container.visible {
+            display: block;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .inpost-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .inpost-logo {
+            background: #ffcd00;
+            color: #000;
+            font-weight: 800;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .inpost-header-text {
+            font-weight: 600;
+            color: #333;
+            font-size: 15px;
+        }
+
+        #easypack-map {
+            width: 100%;
+            height: 450px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #ddd;
+            margin-bottom: 15px;
+        }
+
+        .inpost-hint {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 6px;
+        }
+
+        .inpost-hint strong {
+            color: #666;
+        }
+
+        .selected-locker-info {
+            margin-top: 15px;
+            padding: 15px;
+            background: #e8f5e9;
+            border-radius: 8px;
+            border-left: 4px solid #4caf50;
+            display: none;
+        }
+
+        .selected-locker-info.visible {
+            display: block;
+        }
+
+        .selected-locker-info h4 {
+            margin: 0 0 10px 0;
+            color: #2e7d32;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .selected-locker-info h4::before {
+            content: "✓";
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            background: #4caf50;
+            color: white;
+            border-radius: 50%;
+            font-size: 12px;
+        }
+
+        .selected-locker-info p {
+            margin: 4px 0;
+            font-size: 13px;
+            color: #555;
+        }
+
+        .selected-locker-info .locker-name {
+            font-weight: 700;
+            color: #333;
+            font-size: 15px;
+        }
+
+        .selected-locker-info .locker-address {
+            color: #666;
+        }
+
+        .btn-change-locker {
+            margin-top: 12px;
+            background: transparent;
+            border: 1px solid #ffcd00;
+            color: #333;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+
+        .btn-change-locker:hover {
+            background: #ffcd00;
+        }
+
+        .inpost-hidden-fields {
+            display: none;
+        }
+        .store-pickup-info {
+            display: none;
+            margin-top: 15px;
+            padding: 20px;
+            background: linear-gradient(135deg, #e9f0ec 0%, #d4e5da 100%);
+            border-radius: 12px;
+            border-left: 4px solid var(--brand-green, #2d5a3f);
+        }
+
+        .store-pickup-info.visible {
+            display: block;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        .store-pickup-info h4 {
+            margin: 0 0 12px 0;
+            color: var(--brand-green, #2d5a3f);
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .store-pickup-info h4::before {
+            content: "🏪";
+            font-size: 18px;
+        }
+
+        .store-pickup-info p {
+            margin: 6px 0;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .store-pickup-info .store-name {
+            font-weight: 700;
+            color: #333;
+            font-size: 16px;
+        }
+
+        .store-pickup-info .store-address {
+            font-weight: 500;
+        }
+
+        .store-pickup-info .store-hours {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(45, 90, 63, 0.2);
+            font-size: 13px;
+            color: #666;
+        }
+
+        .store-pickup-info .store-hours strong {
+            color: #333;
+        }
+
+        .inpost-hidden-fields {
+            display: none;
+        }
+
+        .voucher-container {
+            padding: 10px 0;
+        }
+
+        .voucher-input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .voucher-input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        .voucher-input:focus {
+            outline: none;
+            border-color: #2d5a3f;
+        }
+
+        .voucher-input:disabled {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        .btn-apply-voucher {
+            padding: 12px 24px;
+            background: #2d5a3f;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-apply-voucher:hover {
+            background: #1e4830;
+        }
+
+        .voucher-message {
+            margin-top: 10px;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .voucher-message.success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .voucher-message.error {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .voucher-discount {
+            margin-top: 10px;
+            padding: 12px 15px;
+            background: #f0fdf4;
+            border: 1px solid #86efac;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .voucher-discount .voucher-name {
+            font-weight: 600;
+            color: #166534;
+        }
+
+        .voucher-discount .voucher-value {
+            color: #16a34a;
+            font-weight: 700;
+            margin-left: auto;
+        }
+
+        .btn-remove-voucher {
+            background: none;
+            border: none;
+            color: #dc2626;
+            cursor: pointer;
+            padding: 4px 8px;
+            font-size: 16px;
+        }
+
+        .btn-remove-voucher:hover {
+            background: #fee2e2;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+<div th:replace="~{fragments/header :: navbar}"></div>
+
+<div class="breadcrumb">
+    <a th:href="@{/}" th:text="#{breadcrumb.home}">Strona główna</a> /
+    <a th:href="@{/cart}" th:text="#{cart.title}">Koszyk</a> /
+    <span th:text="#{checkout.title}">Kasa</span>
+</div>
+
+<div class="container">
+    <h1 class="page-title" th:text="#{checkout.title}">Kasa</h1>
+
+    <form th:action="@{/checkout/process}" th:object="${checkoutForm}" method="post">
+        <div class="checkout-layout">
+
+            <div class="checkout-form">
+                <section class="checkout-section" th:if="${isGuest}" id="guest-contact-section">
+                    <h2 th:text="#{checkout.contact.title}">Dane kontaktowe</h2>
+                    <div class="form-group">
+                        <label th:text="#{checkout.contact.name} + ' *'">Imię i nazwisko *</label>
+                        <input type="text" name="shippingName" id="guestName" placeholder="Jan Kowalski" required>
+                    </div>
+                    <div class="form-group">
+                        <label th:text="#{checkout.contact.email} + ' *'">Email *</label>
+                        <input type="email" name="email" id="guestEmail" placeholder="jan@email.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label th:text="#{checkout.contact.phone} + ' *'">Numer telefonu *</label>
+                        <input type="tel" name="shippingPhone" id="guestPhone" placeholder="+48 123 456 789" required>
+                    </div>
+                </section>
+
+                <section class="checkout-section">
+                    <h2 th:text="#{checkout.delivery.method}">Sposób dostawy</h2>
+
+                    <div class="delivery-options">
+                        <label class="delivery-option">
+                            <input type="radio" name="deliveryMethod" value="courier" checked onchange="handleDeliveryChange()">
+                            <div class="option-content">
+                                <div class="option-header">
+                                    <span class="option-name" th:text="#{checkout.delivery.courier}">Kurier DPD</span>
+                                    <span class="option-price">18,50 <span th:text="#{general.currency}">zł</span></span>
+                                </div>
+                                <p class="option-desc" th:text="#{checkout.delivery.courier.desc}">Dostawa w 1-2 dni robocze</p>
+                            </div>
+                        </label>
+
+                        <label class="delivery-option">
+                            <input type="radio" name="deliveryMethod" value="inpost" onchange="handleDeliveryChange()">
+                            <div class="option-content">
+                                <div class="option-header">
+                                    <span class="option-name" th:text="#{checkout.delivery.inpost}">Paczkomat InPost</span>
+                                    <span class="option-price">12,99 <span th:text="#{general.currency}">zł</span></span>
+                                </div>
+                                <p class="option-desc" th:text="#{checkout.delivery.inpost.desc}">Dostawa do paczkomatu w 1-2 dni</p>
+                            </div>
+                        </label>
+
+                        <div class="inpost-map-container" id="inpost-map-container">
+                            <div class="inpost-header">
+                                <span class="inpost-logo">InPost</span>
+                                <span class="inpost-header-text">Wybierz paczkomat na mapie</span>
+                            </div>
+
+                            <div class="inpost-hint">
+                                <strong>Wskazówka:</strong> Wyszukaj paczkomat wpisując miasto lub adres w polu wyszukiwania na mapie. Kliknij na wybrany paczkomat, aby go zaznaczyć.
+                            </div>
+
+                            <div id="easypack-map"></div>
+
+                            <div class="selected-locker-info" id="selected-locker-info">
+                                <h4>Wybrany paczkomat</h4>
+                                <p class="locker-name" id="locker-name"></p>
+                                <p class="locker-address" id="locker-address"></p>
+                                <p class="locker-hours" id="locker-hours"></p>
+                                <button type="button" class="btn-change-locker" onclick="changeLocker()">Zmień paczkomat</button>
+                            </div>
+
+                            <div class="inpost-hidden-fields">
+                                <input type="hidden" name="inpostLockerId" id="inpost-locker-id">
+                                <input type="hidden" name="inpostLockerName" id="inpost-locker-name">
+                                <input type="hidden" name="inpostLockerAddress" id="inpost-locker-address">
+                            </div>
+                        </div>
+
+                        <label class="delivery-option">
+                            <input type="radio" name="deliveryMethod" value="pickup" onchange="handleDeliveryChange()">
+                            <div class="option-content">
+                                <div class="option-header">
+                                    <span class="option-name">Odbiór w sklepie</span>
+                                    <span class="option-price" th:text="#{cart.free}">Gratis</span>
+                                </div>
+                                <p class="option-desc">Odbierz zamówienie osobiście w naszym sklepie</p>
+                            </div>
+                        </label>
+
+                        <div class="store-pickup-info" id="store-pickup-info">
+                            <h4>Punkt odbioru</h4>
+                            <p class="store-name">PetMarket - Sklep stacjonarny</p>
+                            <p class="store-address">ul. Zwierzęca 15, 00-001 Warszawa</p>
+                            <div class="store-hours">
+                                <strong>Godziny otwarcia:</strong><br>
+                                Pon-Pt: 9:00 - 20:00<br>
+                                Sob: 10:00 - 18:00<br>
+                                Nd: 10:00 - 16:00
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="checkout-section" id="delivery-address-section">
+                    <h2 th:text="#{checkout.delivery.address}">Adres dostawy</h2>
+
+                    <input type="hidden" name="addressId" id="selected-address-id"
+                           th:value="${defaultAddress != null ? defaultAddress.id : ''}">
+
+                    <div th:if="${defaultAddress != null}" id="default-address-display">
+                        <div class="saved-address-card selected">
+                            <div class="address-badge" th:text="#{addresses.default}">Domyślny</div>
+                            <div class="address-label" th:text="${defaultAddress.label}">Dom</div>
+                            <div class="address-name" th:text="${defaultAddress.name}">Jan Kowalski</div>
+                            <div class="address-details">
+                                <span th:text="${defaultAddress.street}">ul. Przykładowa 123</span><br>
+                                <span th:text="${defaultAddress.zipCode + ' ' + defaultAddress.city}">00-000 Warszawa</span><br>
+                                <span th:if="${defaultAddress.phoneNumber}" th:text="'Tel: ' + ${defaultAddress.phoneNumber}">Tel: +48 123 456 789</span>
+                            </div>
+                        </div>
+
+                        <button type="button" class="btn-change-address" onclick="showAddressForm()">
+                            <span class="btn-icon">📍</span> <span th:text="#{checkout.different.address}">Inny adres dostawy</span>
+                        </button>
+                    </div>
+
+                    <div id="address-form-container" th:classappend="${defaultAddress != null} ? 'hidden' : ''">
+
+                        <div th:if="${savedAddresses != null and !savedAddresses.isEmpty()}" class="saved-addresses-selector" id="saved-addresses-section">
+                            <label th:text="#{checkout.select.saved.address}">Wybierz zapisany adres:</label>
+                            <select id="saved-address-select" onchange="fillAddressFromSaved()">
+                                <option value="" th:text="#{checkout.new.address}">-- Nowy adres --</option>
+                                <option th:each="addr : ${savedAddresses}"
+                                        th:value="${addr.id}"
+                                        th:data-name="${addr.name}"
+                                        th:data-street="${addr.street}"
+                                        th:data-zipcode="${addr.zipCode}"
+                                        th:data-city="${addr.city}"
+                                        th:data-country="${addr.country}"
+                                        th:data-phone="${addr.phoneNumber}"
+                                        th:text="${addr.label + ' - ' + addr.street + ', ' + addr.city}">
+                                    Adres
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" th:if="${!isGuest}">
+                            <label th:text="#{addresses.name} + ' *'">Imię i nazwisko *</label>
+                            <input type="text" name="shippingName" id="shippingName"
+                                   th:value="${user != null ? user.fullName : ''}"
+                                   th:placeholder="#{addresses.name.placeholder}" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label th:text="#{checkout.street} + ' *'">Ulica i numer *</label>
+                            <input type="text" name="shippingStreet" id="shippingStreet"
+                                   th:placeholder="#{checkout.street.placeholder}" required>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label th:text="#{addresses.zipcode} + ' *'">Kod pocztowy *</label>
+                                <input type="text" name="shippingZipCode" id="shippingZipCode"
+                                       th:placeholder="#{addresses.zipcode.placeholder}" required>
+                            </div>
+                            <div class="form-group">
+                                <label th:text="#{addresses.city} + ' *'">Miasto *</label>
+                                <input type="text" name="shippingCity" id="shippingCity"
+                                       th:placeholder="#{addresses.city.placeholder}" required>
+                            </div>
+                        </div>
+
+                        <input type="hidden" name="shippingCountry" value="Poland">
+
+                        <div class="form-group" th:if="${!isGuest}">
+                            <label th:text="#{profile.phone} + ' *'">Numer telefonu *</label>
+                            <input type="tel" name="shippingPhone" id="shippingPhone"
+                                   placeholder="+48 123 456 789" required>
+                        </div>
+
+                        <div class="form-group" th:if="${!isGuest}">
+                            <label th:text="#{login.email} + ' *'">Email *</label>
+                            <input type="email" name="email" id="email"
+                                   th:value="${user != null ? user.email : ''}"
+                                   th:placeholder="#{login.email.placeholder}" required>
+                        </div>
+
+                        <div th:if="${user != null}" class="save-address-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="saveAddress" id="saveAddress" value="true">
+                                <span th:text="#{checkout.save.address}">Zapisz ten adres do mojego konta</span>
+                            </label>
+                            <div id="address-label-group" class="hidden">
+                                <label for="addressLabel" th:text="#{checkout.address.label}">Nazwa adresu (np. Dom, Biuro):</label>
+                                <input type="text" name="addressLabel" id="addressLabel"
+                                       th:placeholder="#{addresses.label.placeholder}">
+                            </div>
+                        </div>
+
+                        <button type="button" th:if="${defaultAddress != null}" class="btn-use-default" onclick="useDefaultAddress()">
+                            <span class="btn-icon">↩</span> <span th:text="#{checkout.use.default.address}">Użyj domyślnego adresu</span>
+                        </button>
+                    </div>
+                </section>
+
+                <section class="checkout-section">
+                    <h2 th:text="#{checkout.voucher.title} ?: 'Kod rabatowy'">Kod rabatowy</h2>
+                    <div class="voucher-container">
+                        <div class="voucher-input-group">
+                            <input type="text" name="voucherCode" id="voucherCode"
+                                   th:placeholder="#{checkout.voucher.placeholder} ?: 'Wpisz kod rabatowy'"
+                                   class="voucher-input">
+                            <button type="button" class="btn-apply-voucher" onclick="applyVoucher()">
+                                <span th:text="#{checkout.voucher.apply} ?: 'Zastosuj'">Zastosuj</span>
+                            </button>
+                        </div>
+                        <div id="voucher-message" class="voucher-message hidden"></div>
+                        <div id="voucher-discount-info" class="voucher-discount hidden">
+                            <span class="voucher-name"></span>
+                            <span class="voucher-value"></span>
+                            <button type="button" class="btn-remove-voucher" onclick="removeVoucher()">✕</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="checkout-section">
+                    <h2 th:text="#{checkout.payment.method}">Metoda płatności</h2>
+
+                    <div class="payment-options">
+                        <label class="payment-option">
+                            <input type="radio" name="paymentMethod" value="card" checked>
+                            <div class="option-content">
+                                <span class="option-name" th:text="#{checkout.payment.card}">Karta płatnicza</span>
+                                <p class="option-desc" th:text="#{checkout.payment.card.desc}">Szybka i bezpieczna płatność kartą</p>
+                            </div>
+                        </label>
+
+                        <label class="payment-option">
+                            <input type="radio" name="paymentMethod" value="blik">
+                            <div class="option-content">
+                                <span class="option-name" th:text="#{checkout.payment.blik}">BLIK</span>
+                                <p class="option-desc" th:text="#{checkout.payment.blik.desc}">Szybka płatność kodem BLIK</p>
+                            </div>
+                        </label>
+
+                        <label class="payment-option">
+                            <input type="radio" name="paymentMethod" value="transfer">
+                            <div class="option-content">
+                                <span class="option-name" th:text="#{checkout.payment.transfer}">Przelew bankowy</span>
+                                <p class="option-desc" th:text="#{checkout.payment.transfer.desc}">Realizacja po zaksięgowaniu wpłaty</p>
+                            </div>
+                        </label>
+
+                        <label class="payment-option">
+                            <input type="radio" name="paymentMethod" value="cod">
+                            <div class="option-content">
+                                <span class="option-name" th:text="#{checkout.payment.cod}">Płatność przy odbiorze</span>
+                                <p class="option-desc" th:text="#{checkout.payment.cod.desc}">Płatność gotówką przy odbiorze + 5 zł</p>
+                            </div>
+                        </label>
+                    </div>
+                </section>
+
+                <section class="checkout-section">
+                    <h2 th:text="#{checkout.notes}">Uwagi do zamówienia</h2>
+                    <textarea class="checkout-textarea"
+                              th:field="*{notes}"
+                              th:placeholder="#{checkout.notes.placeholder}"
+                              rows="4"></textarea>
+                </section>
+            </div>
+
+            <div class="checkout-summary">
+                <h2 th:text="#{cart.summary}">Podsumowanie</h2>
+
+                <div class="summary-items">
+                    <div th:each="item : ${cart.items}" class="summary-item">
+                        <div class="summary-item-image">
+                            <img th:if="${item.product.mainImageUrl != null and (item.product.mainImageUrl.startsWith('/') or item.product.mainImageUrl.startsWith('http'))}"
+                                 th:src="${item.product.mainImageUrl}" th:alt="${item.product.name}"
+                                 style="max-width: 50px; max-height: 50px; object-fit: contain;">
+                            <span th:unless="${item.product.mainImageUrl != null and (item.product.mainImageUrl.startsWith('/') or item.product.mainImageUrl.startsWith('http'))}"
+                                  style="font-size: 24px;" th:text="${item.product.mainImageUrl != null ? item.product.mainImageUrl : '🦴'}">🦴</span>
+                        </div>
+                        <div class="summary-item-info">
+                            <div class="summary-item-name" th:text="${item.product.name}">Produkt</div>
+                            <div class="summary-item-quantity">
+                                <span th:text="#{cart.quantity}">Ilość</span>: <span th:text="${item.quantity}">1</span>
+                            </div>
+                        </div>
+                        <div class="summary-item-price"
+                             th:text="${#numbers.formatDecimal(item.totalPrice, 1, 2)} + ' ' + #{general.currency}">0.00 zł</div>
+                    </div>
+                </div>
+
+                <div class="summary-breakdown">
+                    <div class="summary-row">
+                        <span th:text="#{cart.subtotal}">Wartość produktów</span>
+                        <span th:text="${#numbers.formatDecimal(cart.subtotal, 1, 2)} + ' ' + #{general.currency}">0.00 zł</span>
+                    </div>
+
+                    <div class="summary-row">
+                        <span th:text="#{cart.delivery}">Dostawa</span>
+                        <span id="delivery-cost-display"
+                              th:data-subtotal="${cart.subtotal}"
+                              th:text="${cart.deliveryCost > 0 ? #numbers.formatDecimal(cart.deliveryCost, 1, 2) + ' zł' : 'Gratis'}">18,50 zł</span>
+                    </div>
+
+                    <div class="summary-total">
+                        <span th:text="#{cart.order.total}">Do zapłaty</span>
+                        <span id="total-amount-display"
+                              th:text="${#numbers.formatDecimal(cart.totalAmount, 1, 2)} + ' ' + #{general.currency}">0.00 zł</span>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-place-order" th:text="#{checkout.place.order}">
+                    Złóż zamówienie
+                </button>
+
+                <p class="checkout-terms">
+                    <span th:text="#{checkout.terms.text}">Składając zamówienie akceptujesz</span>
+                    <a href="#" th:text="#{footer.terms}">regulamin</a>
+                    <span th:text="#{register.terms.and}">i</span>
+                    <a href="#" th:text="#{footer.privacy}">politykę prywatności</a>
+                </p>
+            </div>
+        </div>
+    </form>
+</div>
+
+<footer>
+    <p th:text="#{footer.copyright}">&copy; 2026 PetMarket - Wszystkie prawa zastrzeżone</p>
+</footer>
+
+<script th:inline="javascript">
+    const DELIVERY_PRICES = /*[[${deliveryPrices}]]*/ {};
+    const FREE_SHIPPING_THRESHOLD = /*[[${freeShippingThreshold}]]*/ 199;
+
+    let easypackMap = null;
+    let geowidgetInitialized = false;
+
+    window.easyPackAsyncInit = function() {
+        easyPack.init({
+            defaultLocale: 'pl',
+            mapType: 'osm',
+            searchType: 'osm',
+            points: {
+                types: ['parcel_locker']
+            },
+            map: {
+                initialTypes: ['parcel_locker'],
+                defaultLocation: [52.229676, 21.012229],
+                initialZoom: 6
+            }
+        });
+
+        geowidgetInitialized = true;
+        console.log('InPost Geowidget v4 zainicjalizowany');
+    };
+
+    function initInpostMap() {
+        if (!geowidgetInitialized) {
+            console.log('Czekam na inicjalizację Geowidget...');
+            setTimeout(initInpostMap, 200);
+            return;
+        }
+
+        if (easypackMap) {
+            return;
+        }
+
+        easypackMap = easyPack.mapWidget('easypack-map', function(point) {
+            onPointSelected(point);
+        });
+    }
+
+    function onPointSelected(point) {
+        console.log('Wybrany punkt:', point);
+
+        const name = point.name || '';
+        const address = point.address || {};
+        const street = address.line1 || '';
+        const city = address.line2 || '';
+        const fullAddress = street + (city ? ', ' + city : '');
+        const description = point.location_description || 'Paczkomat InPost';
+
+        document.getElementById('inpost-locker-id').value = name;
+        document.getElementById('inpost-locker-name').value = name;
+        document.getElementById('inpost-locker-address').value = fullAddress;
+
+        document.getElementById('locker-name').textContent = name;
+        document.getElementById('locker-address').textContent = fullAddress;
+        document.getElementById('locker-hours').textContent = description + ' • Dostępny 24/7';
+
+        document.getElementById('selected-locker-info').classList.add('visible');
+
+        setTimeout(() => {
+            document.getElementById('selected-locker-info').scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+        }, 300);
+    }
+
+    function changeLocker() {
+        document.getElementById('selected-locker-info').classList.remove('visible');
+        document.getElementById('inpost-locker-id').value = '';
+        document.getElementById('inpost-locker-name').value = '';
+        document.getElementById('inpost-locker-address').value = '';
+    }
+
+    function handleDeliveryChange() {
+        const selectedMethod = document.querySelector('input[name="deliveryMethod"]:checked').value;
+        const inpostContainer = document.getElementById('inpost-map-container');
+        const storePickupInfo = document.getElementById('store-pickup-info');
+
+        inpostContainer.classList.remove('visible');
+        storePickupInfo.classList.remove('visible');
+
+        if (selectedMethod === 'inpost') {
+            inpostContainer.classList.add('visible');
+            hideAddressSection();
+            setTimeout(initInpostMap, 100);
+        } else if (selectedMethod === 'pickup') {
+            storePickupInfo.classList.add('visible');
+            hideAddressSection();
+        } else {
+            showAddressSection();
+        }
+
+        updateDeliveryCost(selectedMethod);
+    }
+
+    const DELIVERY_METHOD_MAP = {
+        'courier': 'courier',
+        'inpost': 'locker',
+        'pickup': 'pickup'
+    };
+
+    function updateDeliveryCost(method) {
+        const deliveryCostEl = document.getElementById('delivery-cost-display');
+        const totalAmountEl = document.getElementById('total-amount-display');
+
+        if (!deliveryCostEl || !totalAmountEl) return;
+
+        const subtotal = parseFloat(deliveryCostEl.getAttribute('data-subtotal')) || 0;
+        const mappedMethod = DELIVERY_METHOD_MAP[method] || method;
+        let deliveryCost = DELIVERY_PRICES[mappedMethod] || 0;
+
+        if (subtotal >= FREE_SHIPPING_THRESHOLD && method !== 'pickup') {
+            deliveryCost = 0;
+        }
+
+        if (deliveryCost === 0) {
+            deliveryCostEl.textContent = 'Gratis';
+        } else {
+            deliveryCostEl.textContent = deliveryCost.toFixed(2).replace('.', ',') + ' zł';
+        }
+
+        const total = Math.max(0, subtotal + deliveryCost - appliedVoucherDiscount);
+        totalAmountEl.textContent = total.toFixed(2).replace('.', ',') + ' zł';
+    }
+
+    function updateTotals() {
+        const deliveryCostEl = document.getElementById('delivery-cost-display');
+        const totalAmountEl = document.getElementById('total-amount-display');
+
+        if (!deliveryCostEl || !totalAmountEl) return;
+
+        const subtotal = parseFloat(deliveryCostEl.getAttribute('data-subtotal')) || 0;
+
+        const deliveryText = deliveryCostEl.textContent || '0';
+        const deliveryCost = deliveryText.toLowerCase().includes('gratis') ? 0 :
+            parseFloat(deliveryText.replace(/[^\d,.-]/g, '').replace(',', '.')) || 0;
+
+        const total = Math.max(0, subtotal + deliveryCost - appliedVoucherDiscount);
+        totalAmountEl.textContent = total.toFixed(2).replace('.', ',') + ' zł';
+    }
+
+    function hideAddressSection() {
+        const deliveryAddressSection = document.getElementById('delivery-address-section');
+        if (deliveryAddressSection) {
+            deliveryAddressSection.style.display = 'none';
+        }
+        setFormFieldsRequired(false);
+    }
+
+    function showAddressSection() {
+        const deliveryAddressSection = document.getElementById('delivery-address-section');
+        if (deliveryAddressSection) {
+            deliveryAddressSection.style.display = '';
+        }
+
+        const addressSection = document.getElementById('default-address-display');
+        const addressFormContainer = document.getElementById('address-form-container');
+
+        if (addressSection) {
+            addressSection.style.display = '';
+            if (addressFormContainer && !addressFormContainer.classList.contains('hidden')) {
+                addressFormContainer.style.display = '';
+                setFormFieldsRequired(true);
+            }
+        } else if (addressFormContainer) {
+            addressFormContainer.style.display = '';
+            setFormFieldsRequired(true);
+        }
+    }
+
+    function showAddressForm() {
+        const defaultDisplay = document.getElementById('default-address-display');
+        const formContainer = document.getElementById('address-form-container');
+        const addressIdInput = document.getElementById('selected-address-id');
+
+        if (defaultDisplay) defaultDisplay.classList.add('hidden');
+        if (formContainer) formContainer.classList.remove('hidden');
+        if (addressIdInput) addressIdInput.value = '';
+        setFormFieldsRequired(true);
+    }
+
+    function useDefaultAddress() {
+        const defaultDisplay = document.getElementById('default-address-display');
+        const formContainer = document.getElementById('address-form-container');
+        const addressIdInput = document.getElementById('selected-address-id');
+        const originalAddressId = document.querySelector('[data-original-address-id]');
+
+        if (defaultDisplay) defaultDisplay.classList.remove('hidden');
+        if (formContainer) formContainer.classList.add('hidden');
+        if (addressIdInput && originalAddressId) {
+            addressIdInput.value = originalAddressId.getAttribute('data-original-address-id');
+        }
+        setFormFieldsRequired(false);
+    }
+
+    function fillAddressFromSaved() {
+        const select = document.getElementById('saved-address-select');
+        if (!select) return;
+        const opt = select.options[select.selectedIndex];
+
+        if (opt.value === '') {
+            ['shippingName', 'shippingStreet', 'shippingZipCode', 'shippingCity', 'shippingPhone']
+                .forEach(id => {
+                    const field = document.getElementById(id);
+                    if (field) field.value = '';
+                });
+            return;
+        }
+
+        const setVal = (id, attr) => {
+            const field = document.getElementById(id);
+            if (field) field.value = opt.getAttribute(attr) || '';
+        };
+        setVal('shippingName', 'data-name');
+        setVal('shippingStreet', 'data-street');
+        setVal('shippingZipCode', 'data-zipcode');
+        setVal('shippingCity', 'data-city');
+        setVal('shippingPhone', 'data-phone');
+    }
+
+    function setFormFieldsRequired(required) {
+        ['shippingStreet', 'shippingZipCode', 'shippingCity']
+            .forEach(id => {
+                const field = document.getElementById(id);
+                if (field) {
+                    required ? field.setAttribute('required', 'required') : field.removeAttribute('required');
+                }
+            });
+        ['shippingName', 'shippingPhone', 'email']
+            .forEach(id => {
+                const field = document.getElementById(id);
+                if (field) {
+                    required ? field.setAttribute('required', 'required') : field.removeAttribute('required');
+                }
+            });
+    }
+
+    function validateCheckoutForm(event) {
+        const selectedMethod = document.querySelector('input[name="deliveryMethod"]:checked').value;
+
+        if (selectedMethod === 'inpost') {
+            const lockerId = document.getElementById('inpost-locker-id').value;
+            if (!lockerId) {
+                event.preventDefault();
+                alert('Proszę wybrać paczkomat na mapie.');
+                return false;
+            }
+        }
+        return true;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const saveAddressCheckbox = document.getElementById('saveAddress');
+        const addressLabelGroup = document.getElementById('address-label-group');
+
+        if (saveAddressCheckbox && addressLabelGroup) {
+            saveAddressCheckbox.addEventListener('change', function() {
+                this.checked ? addressLabelGroup.classList.remove('hidden') : addressLabelGroup.classList.add('hidden');
+            });
+        }
+
+        const defaultDisplay = document.getElementById('default-address-display');
+        if (defaultDisplay && !defaultDisplay.classList.contains('hidden')) {
+            setFormFieldsRequired(false);
+        }
+
+        const addressIdInput = document.getElementById('selected-address-id');
+        if (addressIdInput && addressIdInput.value) {
+            addressIdInput.setAttribute('data-original-address-id', addressIdInput.value);
+        }
+
+        const checkoutForm = document.querySelector('form');
+        if (checkoutForm) {
+            checkoutForm.addEventListener('submit', validateCheckoutForm);
+        }
+    });
+
+    let appliedVoucherDiscount = 0;
+
+    async function applyVoucher() {
+        const voucherInput = document.getElementById('voucherCode');
+        const voucherMessage = document.getElementById('voucher-message');
+        const voucherDiscountInfo = document.getElementById('voucher-discount-info');
+        const code = voucherInput.value.trim();
+
+        if (!code) {
+            showVoucherMessage('Wpisz kod rabatowy', 'error');
+            return;
+        }
+
+        const deliveryCostEl = document.getElementById('delivery-cost-display');
+        const subtotal = parseFloat(deliveryCostEl?.getAttribute('data-subtotal')) || 0;
+
+        try {
+            const response = await fetch(`/checkout/validate-voucher?code=${encodeURIComponent(code)}&total=${subtotal}`);
+            const data = await response.json();
+
+            if (data.valid) {
+                appliedVoucherDiscount = parseFloat(data.discount) || 0;
+                voucherInput.readOnly = true;
+
+                voucherDiscountInfo.querySelector('.voucher-name').textContent = code;
+                voucherDiscountInfo.querySelector('.voucher-value').textContent = '-' + appliedVoucherDiscount.toFixed(2) + ' zł';
+                voucherDiscountInfo.classList.remove('hidden');
+                voucherMessage.classList.add('hidden');
+
+                updateTotalsWithVoucher();
+
+                showVoucherMessage(data.message, 'success');
+            } else {
+                showVoucherMessage(data.message, 'error');
+            }
+        } catch (error) {
+            console.error('Error validating voucher:', error);
+            showVoucherMessage('Błąd podczas sprawdzania kodu', 'error');
+        }
+    }
+
+    function removeVoucher() {
+        const voucherInput = document.getElementById('voucherCode');
+        const voucherDiscountInfo = document.getElementById('voucher-discount-info');
+        const voucherMessage = document.getElementById('voucher-message');
+
+        voucherInput.value = '';
+        voucherInput.readOnly = false;
+        appliedVoucherDiscount = 0;
+
+        voucherDiscountInfo.classList.add('hidden');
+        voucherMessage.classList.add('hidden');
+
+        updateTotals();
+    }
+
+    function showVoucherMessage(message, type) {
+        const voucherMessage = document.getElementById('voucher-message');
+        voucherMessage.textContent = message;
+        voucherMessage.className = 'voucher-message ' + type;
+        voucherMessage.classList.remove('hidden');
+    }
+
+    function updateTotalsWithVoucher() {
+        const deliveryCostEl = document.getElementById('delivery-cost-display');
+        const totalEl = document.getElementById('total-amount-display');
+
+        if (!deliveryCostEl || !totalEl) return;
+
+        const subtotal = parseFloat(deliveryCostEl.getAttribute('data-subtotal')) || 0;
+
+        const deliveryText = deliveryCostEl.textContent || '0';
+        const delivery = deliveryText.toLowerCase().includes('gratis') ? 0 :
+            parseFloat(deliveryText.replace(/[^\d,.-]/g, '').replace(',', '.')) || 0;
+
+        const total = Math.max(0, subtotal + delivery - appliedVoucherDiscount);
+
+        totalEl.textContent = total.toFixed(2).replace('.', ',') + ' zł';
+    }
+</script>
+</body>
+</html>

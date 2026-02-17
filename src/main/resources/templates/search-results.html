@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:lang="${#locale.language}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <title th:text="${query != null and !query.isEmpty()} ? 'Wyniki wyszukiwania: ' + ${query} + ' - PetMarket' : 'Wszystkie produkty - PetMarket'">Wyniki wyszukiwania - PetMarket</title>
+    <link rel="stylesheet" href="/css/public-styles.css">
+</head>
+<body>
+<div th:replace="~{fragments/header :: navbar}"></div>
+<div th:replace="~{fragments/header :: categoryBar}"></div>
+
+<div class="breadcrumb">
+    <a th:href="@{/}" th:text="#{breadcrumb.home}">Strona główna</a> /
+    <span th:if="${query != null and !query.isEmpty()}" th:text="'Wyszukiwanie: ' + ${query}">Wyszukiwanie</span>
+    <span th:unless="${query != null and !query.isEmpty()}">Wszystkie produkty</span>
+</div>
+
+<div class="container">
+    <div class="category-header">
+        <div>
+            <h1 class="category-title" th:if="${query != null and !query.isEmpty()}" th:text="'Wyniki wyszukiwania: ' + ${query}">Wyniki wyszukiwania</h1>
+            <h1 class="category-title" th:unless="${query != null and !query.isEmpty()}">Wszystkie produkty</h1>
+            <p class="category-count">
+                <span th:text="${products.size()}">0</span>
+                <span th:text="#{category.products}">produktów</span>
+            </p>
+        </div>
+    </div>
+
+    <div class="search-results-layout">
+        <div class="products-section">
+
+            <div class="sorting-bar">
+                <div class="sorting-info">
+                    <span th:text="#{category.showing}">Wyświetlanie</span>
+                    <strong th:text="${products.size()}">0</strong>
+                    <span th:text="#{category.products}">produktów</span>
+                </div>
+            </div>
+
+            <div th:if="${!products.isEmpty()}" class="products-grid">
+                <a th:each="product : ${products}"
+                   th:href="@{/product/{id}(id=${product.id})}"
+                   class="product-card">
+
+                    <div th:if="${product.hasDiscount and !product.buyXGetYPromotion and product.discountPercent > 0}" class="product-badge"
+                         th:text="'-' + ${product.discountPercent} + '%'">-25%</div>
+                    <div th:if="${product.buyXGetYPromotion}" class="product-badge"
+                         th:text="'%'">%</div>
+
+                    <button type="button"
+                            sec:authorize="isAuthenticated()"
+                            class="wishlist-btn"
+                            th:classappend="${wishlistProductIds != null and wishlistProductIds.contains(product.id)} ? 'active' : ''"
+                            th:data-product-id="${product.id}"
+                            onclick="toggleWishlist(this, event)"
+                            th:title="${wishlistProductIds != null and wishlistProductIds.contains(product.id)} ? 'Usuń z ulubionych' : 'Dodaj do ulubionych'">
+                        <span class="heart" th:text="${wishlistProductIds != null and wishlistProductIds.contains(product.id)} ? '♥' : '♡'">♡</span>
+                    </button>
+
+                    <div class="product-image">
+                        <img th:if="${product.mainImageUrl != null and (product.mainImageUrl.startsWith('/') or product.mainImageUrl.startsWith('http'))}"
+                             th:src="${product.mainImageUrl}" th:alt="${product.name}"
+                             style="max-width: 100%; max-height: 180px; object-fit: contain;">
+                        <span th:unless="${product.mainImageUrl != null and (product.mainImageUrl.startsWith('/') or product.mainImageUrl.startsWith('http'))}"
+                              style="font-size: 64px;" th:text="${product.mainImageUrl != null ? product.mainImageUrl : '🦴'}">🦴</span>
+                    </div>
+
+                    <div class="product-info">
+                        <h3 class="product-name" th:text="${product.name}">Nazwa produktu</h3>
+
+                        <p class="product-desc" th:text="${product.shortDescription}">Opis produktu</p>
+
+                        <div class="product-footer">
+                            <div class="product-pricing">
+                                <span class="old-price" th:if="${product.hasDiscount and !product.buyXGetYPromotion}"
+                                      th:text="${#numbers.formatDecimal(product.oldPrice, 1, 2)} + ' ' + #{general.currency}">0.00 zł</span>
+                                <span class="product-price"
+                                      th:text="${#numbers.formatDecimal(product.currentPrice, 1, 2)} + ' ' + #{general.currency}">0.00 zł</span>
+                            </div>
+
+                            <button type="button"
+                                    th:if="${product.available}"
+                                    class="btn-add-cart"
+                                    th:data-product-id="${product.id}"
+                                    onclick="addToCartAsync(this)"
+                                    title="Do koszyka">
+                                🛒
+                            </button>
+                            <span th:unless="${product.available}"
+                                  class="sold-out-badge"
+                                  style="background: #fee2e2; color: #dc2626; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: 600;"
+                                  th:text="${product.unavailableMessage}">
+                                Produkt niedostępny
+                            </span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <div th:if="${products.isEmpty()}" class="empty-state">
+                <div class="empty-icon">📦</div>
+                <h2 class="empty-title" th:text="#{search.no.results}">Brak wyników</h2>
+                <p class="empty-text" th:if="${query != null and !query.isEmpty()}">Nie znaleziono produktów dla "<span th:text="${query}">zapytanie</span>"</p>
+                <p class="empty-text" th:unless="${query != null and !query.isEmpty()}">Brak dostępnych produktów</p>
+                <a th:href="@{/}" class="btn-primary" th:text="#{breadcrumb.home}">Strona główna</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .search-results-layout {
+        display: block;
+        width: 100%;
+    }
+    .search-results-layout .products-section {
+        width: 100%;
+        max-width: 100%;
+    }
+    .search-results-layout .products-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 24px;
+        width: 100%;
+    }
+</style>
+
+<footer>
+    <p th:text="#{footer.copyright}">&copy; 2026 PetMarket - Wszystkie prawa zastrzeżone</p>
+</footer>
+
+<script th:inline="javascript">
+    async function addToCartAsync(button) {
+        const productId = button.getAttribute('data-product-id');
+        const originalContent = button.innerHTML;
+
+        button.disabled = true;
+        button.innerHTML = '⏳';
+
+        try {
+            const csrfToken = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
+            const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
+
+            const formData = new FormData();
+            formData.append('productId', productId);
+            formData.append('quantity', 1);
+
+            const headers = {};
+            if (csrfToken && csrfHeader) {
+                headers[csrfHeader] = csrfToken;
+            }
+
+            const response = await fetch('/cart/add-async', {
+                method: 'POST',
+                headers: headers,
+                body: formData
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                button.innerHTML = '✓';
+                button.style.background = '#16a34a';
+
+                const cartBadge = document.getElementById('cart-badge-count');
+                if (cartBadge && data.totalItems !== undefined) {
+                    cartBadge.textContent = data.totalItems;
+                    cartBadge.style.display = data.totalItems > 0 ? 'flex' : 'none';
+                }
+
+                setTimeout(() => {
+                    button.innerHTML = originalContent;
+                    button.style.background = '';
+                    button.disabled = false;
+                }, 1500);
+            } else {
+                const errorText = await response.text();
+                alert(errorText || 'Nie udało się dodać produktu do koszyka');
+                button.innerHTML = originalContent;
+                button.disabled = false;
+            }
+        } catch (error) {
+            console.error('Error adding to cart:', error);
+            alert('Wystąpił błąd podczas dodawania do koszyka');
+            button.innerHTML = originalContent;
+            button.disabled = false;
+        }
+    }
+
+    async function toggleWishlist(button, event) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const productId = button.getAttribute('data-product-id');
+        const heartSpan = button.querySelector('.heart');
+
+        button.disabled = true;
+
+        try {
+            const csrfToken = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
+            const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
+
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            if (csrfToken && csrfHeader) {
+                headers[csrfHeader] = csrfToken;
+            }
+
+            const response = await fetch('/wishlist/toggle', {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify({ productId: parseInt(productId) })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                if (data.added) {
+                    button.classList.add('active');
+                    heartSpan.textContent = '♥';
+                    button.title = 'Usuń z ulubionych';
+                } else {
+                    button.classList.remove('active');
+                    heartSpan.textContent = '♡';
+                    button.title = 'Dodaj do ulubionych';
+                }
+            } else if (data.requireLogin) {
+                window.location.href = '/login?returnUrl=' + encodeURIComponent(window.location.pathname);
+            } else {
+                console.error('Wishlist error:', data.message);
+            }
+        } catch (error) {
+            console.error('Error toggling wishlist:', error);
+        } finally {
+            button.disabled = false;
+        }
+    }
+</script>
+
+</body>
+</html>

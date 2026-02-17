@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+
+<nav th:fragment="navbar" class="navbar">
+    <a th:href="@{/}" href="/" class="logo">
+        🐾 <span th:text="#{app.name}">PetMarket</span>
+    </a>
+
+    <div class="search-container">
+        <form th:action="@{/search/quick}" action="/search/quick" method="get" autocomplete="off">
+            <label>
+                <input type="text" name="q" id="search-input"
+                       th:placeholder="#{nav.search.placeholder}"
+                       placeholder="Szukaj produktów..."
+                       autocomplete="off">
+            </label>
+            <button type="submit" class="search-btn" th:text="#{nav.search.button}">Szukaj</button>
+        </form>
+        <div class="search-suggestions" id="search-suggestions"></div>
+    </div>
+
+    <div class="nav-icons">
+        
+        <a sec:authorize="isAuthenticated()"
+           th:href="@{/account}"
+           class="nav-link">
+            <span style="font-size: 20px;">👤</span>
+            <span th:text="#{nav.account}">Konto</span>
+        </a>
+
+        
+        <a sec:authorize="!isAuthenticated()"
+           th:href="@{/login}"
+           class="nav-link">
+            <span style="font-size: 20px;">👤</span>
+            <span th:text="#{nav.login}">Zaloguj się</span>
+        </a>
+
+        <a th:href="@{/cart}" class="nav-link">
+            <div style="position: relative; display: inline-block;">
+                🛒
+                <span class="cart-badge" id="cart-badge-count"
+                      th:text="${cartItemCount != null ? cartItemCount : (session.cart != null ? session.cart.totalItems : 0)}"
+                      th:style="${(cartItemCount == null or cartItemCount == 0) and (session.cart == null or session.cart.totalItems == 0)} ? 'display: none;' : 'display: flex;'">
+                    0
+                </span>
+            </div>
+            <span th:text="#{nav.cart}">Koszyk</span>
+        </a>
+
+        
+        <div class="language-switcher">
+            <a th:href="@{''(lang='pl')}" class="lang-btn" th:classappend="${#locale.language == 'pl'} ? 'active' : ''" title="Polski">
+                🇵🇱
+            </a>
+            <a th:href="@{''(lang='en')}" class="lang-btn" th:classappend="${#locale.language == 'en'} ? 'active' : ''" title="English">
+                🇺🇸
+            </a>
+        </div>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                fetch('/cart/count')
+                    .then(response => response.json())
+                    .then(data => {
+                        const badge = document.getElementById('cart-badge-count');
+                        if (badge) {
+                            badge.textContent = data.count;
+                            badge.style.display = data.count > 0 ? 'flex' : 'none';
+                        }
+                    })
+                    .catch(error => console.error('Failed to fetch cart count from /cart/count:', error));
+
+                const searchInput = document.getElementById('search-input');
+                const suggestionsContainer = document.getElementById('search-suggestions');
+                let debounceTimer;
+                let selectedIndex = -1;
+
+                if (searchInput && suggestionsContainer) {
+                    function fetchSuggestions(query) {
+                        fetch('/search/api/suggestions?q=' + encodeURIComponent(query))
+                            .then(response => response.json())
+                            .then(suggestions => {
+                                if (suggestions.length === 0) {
+                                    suggestionsContainer.innerHTML = '';
+                                    suggestionsContainer.style.display = 'none';
+                                    return;
+                                }
+
+                                selectedIndex = -1;
+                                suggestionsContainer.innerHTML = suggestions.map((s, index) => {
+                                    let icon = '🔍';
+                                    if (s.icon === 'history') icon = '🕒';
+                                    else if (s.icon === 'popular') icon = '🔥';
+                                    else if (s.icon === 'category') icon = '📁';
+                                    else if (s.icon === 'product') icon = '🛍️';
+                                    else if (s.icon === 'promo') icon = '🏷️';
+                                    else if (s.icon === 'bestseller') icon = '⭐';
+
+                                    return `
+                                        <a href="${s.url}" class="suggestion-item" data-index="${index}">
+                                            <span class="suggestion-icon">${icon}</span>
+                                            <span class="suggestion-name">${s.name}</span>
+                                            <span class="suggestion-type">${s.type}</span>
+                                        </a>
+                                    `;
+                                }).join('');
+                                suggestionsContainer.style.display = 'block';
+                            })
+                            .catch(error => console.error('Search suggestions error:', error));
+                    }
+
+                    searchInput.addEventListener('input', function() {
+                        clearTimeout(debounceTimer);
+                        const query = this.value.trim();
+
+                        debounceTimer = setTimeout(() => {
+                            fetchSuggestions(query);
+                        }, 200);
+                    });
+
+                    searchInput.addEventListener('keydown', function(e) {
+                        const items = suggestionsContainer.querySelectorAll('.suggestion-item');
+                        if (items.length === 0) return;
+
+                        if (e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+                            updateSelection(items);
+                        } else if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            selectedIndex = Math.max(selectedIndex - 1, -1);
+                            updateSelection(items);
+                        } else if (e.key === 'Enter' && selectedIndex >= 0) {
+                            e.preventDefault();
+                            items[selectedIndex].click();
+                        } else if (e.key === 'Escape') {
+                            suggestionsContainer.style.display = 'none';
+                        }
+                    });
+
+                    function updateSelection(items) {
+                        items.forEach((item, index) => {
+                            item.classList.toggle('selected', index === selectedIndex);
+                        });
+                    }
+
+                    document.addEventListener('click', function(e) {
+                        if (e.target !== searchInput &&
+                            !searchInput.contains(e.target) &&
+                            !suggestionsContainer.contains(e.target)) {
+                            suggestionsContainer.style.display = 'none';
+                        }
+                    });
+
+                    searchInput.addEventListener('focus', function() {
+                        fetchSuggestions(this.value.trim());
+                    });
+                }
+            });
+        </script>
+    </div>
+</nav>
+
+
+<div th:fragment="categoryBar" class="category-bar" th:if="${globalCategories != null and !#lists.isEmpty(globalCategories)}">
+    <a th:each="category : ${globalCategories}"
+       th:href="@{/category/{slug}(slug=${category.slug})}"
+       class="category-link">
+        <span th:text="${category.icon}">📦</span>
+        <span th:text="${category.name}">Kategoria</span>
+    </a>
+</div>
+
+</body>
+</html>

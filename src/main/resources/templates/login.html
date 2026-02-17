@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}" class="auth-page">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="#{login.title}">Logowanie - PetMarket</title>
+    <link rel="stylesheet" href="/css/public-styles.css">
+</head>
+<body>
+
+<div th:replace="~{fragments/header :: navbar}"></div>
+<div th:replace="~{fragments/header :: categoryBar}"></div>
+
+
+<div class="breadcrumb">
+    <a th:href="@{/}" th:text="#{breadcrumb.home}">Strona główna</a> / <span th:text="#{breadcrumb.login}">Logowanie</span>
+</div>
+
+
+<main class="main-content">
+
+    
+    <div class="form-header">
+        <div class="paw-icon">🐾</div>
+        <h1 th:text="#{login.header}">Zaloguj się</h1>
+        <p th:text="#{login.welcome}">Witaj ponownie w PetMarket!</p>
+    </div>
+
+    
+    <div class="form-card">
+
+        
+        <div th:if="${param.registered}" class="alert alert-info">
+            ✉️ <span th:text="#{login.success.registered}">Konto zostało utworzone! Sprawdź swoją skrzynkę e-mail, aby aktywować konto.</span>
+        </div>
+
+        
+        <div th:if="${param.activated}" class="alert alert-success">
+            ✔ <span th:text="#{login.success.activated}">Konto zostało aktywowane! Możesz się teraz zalogować.</span>
+        </div>
+
+        
+        <div th:if="${success}" class="alert alert-success">
+            ✔ <span th:text="${success}">Hasło zostało zmienione pomyślnie.</span>
+        </div>
+
+        
+        <div th:if="${param.activation_error}" class="alert alert-error">
+            ✗ <span th:text="#{login.error.activation}">Nieprawidłowy lub wygasły kod aktywacyjny.</span>
+        </div>
+
+        
+        <div th:if="${param.disabled}" class="alert alert-error">
+            ✗ <span th:text="#{login.error.disabled}">Konto nie zostało aktywowane. Sprawdź swoją skrzynkę e-mail.</span>
+        </div>
+
+        
+        <div th:if="${param.error}" class="alert alert-error">
+            ✗ <span th:text="#{login.error.invalid}">Nieprawidłowy e-mail lub hasło.</span>
+        </div>
+
+        
+        <div th:if="${param.logout}" class="alert alert-info">
+            ✔ <span th:text="#{login.success.logout}">Zostałeś pomyślnie wylogowany.</span>
+        </div>
+
+        
+        <form th:action="@{/login}" method="post">
+
+            
+            <div class="form-group">
+                <label for="email" th:text="#{login.email}">E-mail</label>
+                <div class="input-wrapper">
+                    <span class="icon">✉️</span>
+                    <input type="email"
+                           id="email"
+                           name="username"
+                           th:placeholder="#{login.email.placeholder}"
+                           placeholder="twoj@email.pl"
+                           required
+                           autofocus>
+                </div>
+            </div>
+
+            
+            <div class="form-group">
+                <label for="password" th:text="#{login.password}">Hasło</label>
+                <div class="input-wrapper">
+                    <span class="icon">🔒</span>
+                    <input type="password"
+                           id="password"
+                           name="password"
+                           th:placeholder="#{login.password.placeholder}"
+                           placeholder="Wprowadź hasło"
+                           required>
+                </div>
+                <a th:href="@{/forgot-password}" class="forgot-password" th:text="#{login.forgot.password}">Zapomniałeś hasła?</a>
+            </div>
+
+            
+            <button type="submit" class="btn-login" th:text="#{login.submit}">Zaloguj się</button>
+        </form>
+
+        
+        <div class="form-footer-link">
+            <span th:text="#{login.no.account}">Nie masz jeszcze konta?</span> <a th:href="@{/register}" th:text="#{login.register.link}">Zarejestruj się</a>
+        </div>
+    </div>
+</main>
+
+
+<footer>
+    <p th:text="#{footer.copyright}">&copy; 2026 PetMarket - Wszystkie prawa zastrzeżone</p>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Migracja danych - Panel Admina</title>
+    <link rel="stylesheet" th:href="@{/css/admin-styles.css}">
+</head>
+<body>
+<div class="admin-wrapper">
+    <aside th:replace="~{fragments/admin-fragments :: sidebar('data')}"></aside>
+
+    <main class="admin-main">
+        <div class="admin-content">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">Migracja danych</h1>
+                    <p class="page-subtitle">Eksport i import danych bazy</p>
+                </div>
+                <div class="page-actions">
+                    <a th:href="@{/admin}" class="btn btn-secondary">Powrót do panelu</a>
+                </div>
+            </div>
+
+            <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+            <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+            <!-- Diagnostyka bazy danych -->
+            <div class="card" style="margin-bottom: 20px;">
+                <div class="card-header"><h2 class="card-title">Diagnostyka bazy danych</h2></div>
+                <div class="card-body">
+                    <p style="margin-bottom: 10px;"><strong>Polaczenie:</strong>
+                        <span th:text="${dbUrl}" style="font-family: monospace; color: #0066cc;">-</span>
+                    </p>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                        <tr style="background: #f5f5f5;">
+                            <th style="text-align: left; padding: 8px; border: 1px solid #ddd;">Tabela</th>
+                            <th style="text-align: right; padding: 8px; border: 1px solid #ddd;">Wiersze</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="entry : ${tableInfo}">
+                            <td style="padding: 8px; border: 1px solid #ddd;" th:text="${entry.key}">-</td>
+                            <td style="text-align: right; padding: 8px; border: 1px solid #ddd;"
+                                th:text="${entry.value >= 0 ? entry.value : 'BLAD'}"
+                                th:style="${entry.value == 0 ? 'color: red; font-weight: bold;' : (entry.value > 0 ? 'color: green; font-weight: bold;' : 'color: orange;')}">-</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <p th:if="${#maps.isEmpty(tableInfo)}" style="color: red; font-weight: bold; margin-top: 10px;">
+                        Nie znaleziono zadnych tabel! Sprawdz polaczenie z baza danych.
+                    </p>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="card">
+                    <div class="card-header"><h2 class="card-title">Eksport danych</h2></div>
+                    <div class="card-body">
+                        <p style="color: #666; margin-bottom: 15px;">
+                            Pobierz wszystkie dane z bazy jako plik JSON.
+                            Plik mozna potem zaimportowac do innej bazy (np. Azure SQL w chmurze).
+                        </p>
+                        <a th:href="@{/admin/data/export}" class="btn btn-primary">
+                            Pobierz eksport (JSON)
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header"><h2 class="card-title">Import danych</h2></div>
+                    <div class="card-body">
+                        <p style="color: #666; margin-bottom: 15px;">
+                            Wgraj plik JSON z eksportem. Uwaga: istniejace dane zostana zastapione!
+                        </p>
+                        <form th:action="@{/admin/data/import}" method="post" enctype="multipart/form-data">
+                            <input type="file" name="file" accept=".json" required class="form-control"
+                                   style="margin-bottom: 10px;">
+                            <button type="submit" class="btn btn-primary"
+                                    onclick="return confirm('Czy na pewno chcesz zaimportowac dane? Istniejace dane zostana zastapione!')">
+                                Importuj dane
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>

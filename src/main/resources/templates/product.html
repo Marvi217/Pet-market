@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:lang="${#locale.language}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <title th:text="${product.name} + ' ' + #{product.title.suffix}">Produkt - PetMarket</title>
+    <link rel="stylesheet" href="/css/public-styles.css">
+</head>
+<body>
+<div th:replace="~{fragments/header :: navbar}"></div>
+<div th:replace="~{fragments/header :: categoryBar}"></div>
+
+<div class="breadcrumb">
+    <a th:href="@{/}" th:text="#{breadcrumb.home}">Strona główna</a> /
+    <a th:href="@{/category/{slug}(slug=${product.category.slug})}"
+       th:text="${product.category.name}">Kategoria</a> /
+    <span th:text="${product.name}">Produkt</span>
+</div>
+
+<div class="container">
+    <div class="product-layout">
+
+        <div class="product-gallery">
+            <div class="main-image" id="mainImage">
+                <img th:if="${product.mainImageUrl != null and (product.mainImageUrl.startsWith('/') or product.mainImageUrl.startsWith('http'))}"
+                     th:src="${product.mainImageUrl}" th:alt="${product.name}"
+                     style="max-width: 100%; max-height: 400px; object-fit: contain;">
+                <span th:unless="${product.mainImageUrl != null and (product.mainImageUrl.startsWith('/') or product.mainImageUrl.startsWith('http'))}"
+                      style="font-size: 120px;" th:text="${product.mainImageUrl != null ? product.mainImageUrl : '🦴'}">🦴</span>
+            </div>
+            <div class="thumbnail-gallery" th:if="${product.images != null and !product.images.isEmpty()}">
+                <div th:each="img, iterStat : ${product.images}"
+                     class="thumbnail"
+                     th:classappend="${iterStat.first} ? 'active' : ''"
+                     th:data-img="${img.imageUrl}"
+                     onclick="switchMainImage(this)">
+                    <img th:src="${img.imageUrl}" th:alt="${product.name}" style="width: 60px; height: 60px; object-fit: cover;">
+                </div>
+            </div>
+            <div class="thumbnail-gallery" th:if="${product.images == null or product.images.isEmpty()}">
+                <div class="thumbnail active">🦴</div>
+            </div>
+        </div>
+
+        <div class="product-info">
+            <div class="product-badge" th:if="${product.hasDiscount and !product.buyXGetYPromotion and product.discountPercent > 0}"
+                 th:text="'-' + ${product.discountPercent} + '%'">-25%</div>
+            <div class="product-badge" th:if="${product.buyXGetYPromotion}"
+                 th:text="'%'">%</div>
+
+            <div class="product-title-row">
+                <h1 class="product-title" th:text="${product.name}">Nazwa produktu</h1>
+
+                <button type="button"
+                        sec:authorize="isAuthenticated()"
+                        class="product-wishlist-btn"
+                        th:classappend="${isInWishlist} ? 'active' : ''"
+                        th:data-product-id="${product.id}"
+                        onclick="toggleWishlist(this)"
+                        th:title="${isInWishlist} ? 'Usuń z ulubionych' : 'Dodaj do ulubionych'">
+                    <span class="heart" th:text="${isInWishlist} ? '♥' : '♡'">♡</span>
+                    <span class="wishlist-text" th:text="${isInWishlist} ? 'W ulubionych' : 'Dodaj do ulubionych'">Dodaj do ulubionych</span>
+                </button>
+            </div>
+
+            <div class="product-rating">
+                <span class="stars">
+                    <span class="filled-stars" th:style="'width: ' + ${starHelper.getFilledStarsWidth(product.rating)}">★★★★★</span>
+                    <span class="empty-stars">★★★★★</span>
+                </span>
+                <span class="rating-score" th:text="${#numbers.formatDecimal(product.rating, 1, 1)}">4.8</span>
+                <span class="rating-count">
+                    <a href="#reviews">(<span th:text="${reviewCount}">124</span> <span th:text="#{product.rating.reviews}">opinii</span>)</a>
+                </span>
+            </div>
+
+            <div class="price-section">
+                <div class="old-price" th:if="${product.hasDiscount and !product.buyXGetYPromotion}"
+                     th:text="${#numbers.formatDecimal(product.oldPrice, 1, 2)} + ' ' + #{general.currency}">252.00 zł</div>
+                <div class="current-price"
+                     th:text="${#numbers.formatDecimal(product.currentPrice, 1, 2)} + ' ' + #{general.currency}">189.00 zł</div>
+                <div class="price-info">
+                    <span class="savings" th:if="${product.hasDiscount and !product.buyXGetYPromotion and product.savingsAmount > 0}">
+                        <span th:text="#{product.price.savings}">Oszczędzasz</span>
+                        <span th:text="${#numbers.formatDecimal(product.savingsAmount, 1, 2)}">63</span>
+                        <span th:text="#{general.currency}">zł</span>!
+                    </span>
+                    <span th:unless="${product.hasDiscount}" th:text="#{product.price.best}">Najlepsza cena w ostatnich 30 dniach</span>
+                </div>
+                <div class="promotion-info" th:if="${product.buyXGetYPromotion}">
+                    🎁 <span th:text="${product.buyXGetYDescription}">Promocja</span>
+                    <div class="effective-price" style="margin-top: 5px; font-size: 14px; color: #16a34a;">
+                        💰 <span th:text="${product.buyXGetYTotalQuantity}">3</span> szt. za
+                        <span th:text="${#numbers.formatDecimal(product.buyXGetYEffectivePrice, 1, 2)}">63.00</span>
+                        <span th:text="#{general.currency}">zł</span>/szt.
+                    </div>
+                </div>
+            </div>
+
+            <div class="availability" th:classappend="${product.available ? 'in-stock' : 'low-stock'}">
+                <span class="availability-icon">✓</span>
+                <span class="availability-text"
+                      th:if="${product.available}" th:text="#{product.available}">Dostępny - wysyłka w 24h</span>
+                <span class="availability-text"
+                      th:unless="${product.available}" th:text="#{product.unavailable}">Niedostępny</span>
+            </div>
+
+            <div class="stock-quantity" th:if="${product.available}" style="margin-top: 10px; font-size: 14px; color: #666;">
+                <span th:text="#{product.stock.available}">Dostępne sztuki:</span>
+                <strong th:text="${product.stockQuantity}">10</strong>
+            </div>
+
+            <form th:action="@{/cart/add}" method="post" style="display: inline;" th:if="${product.available}">
+                <input type="hidden" name="productId" th:value="${product.id}">
+                <div class="purchase-section">
+                    <div class="quantity-selector">
+                        <button type="button" class="quantity-btn" onclick="decreaseQty()">−</button>
+                        <input type="number" class="quantity-input" id="quantity" name="quantity" value="1" min="1"
+                               th:max="${product.stockQuantity}" th:data-stock="${product.stockQuantity}">
+                        <button type="button" class="quantity-btn" onclick="increaseQty()">+</button>
+                    </div>
+                    <button type="submit" class="btn-add-to-cart">
+                        <span style="font-size: 20px;">🛒</span>
+                        <span th:text="#{product.add.to.cart}">Dodaj do koszyka</span>
+                    </button>
+                </div>
+            </form>
+            <div th:unless="${product.available}" class="purchase-section">
+                <div style="background: #fee2e2; color: #dc2626; padding: 15px 25px; border-radius: 8px; text-align: center; font-weight: 600;">
+                    <span style="font-size: 20px;">🚫</span>
+                    <span th:text="${product.unavailableMessage}">Produkt niedostępny</span>
+                </div>
+            </div>
+
+            <div class="delivery-info">
+                <div class="delivery-item">
+                    <span class="delivery-icon">🚚</span>
+                    <div class="delivery-text">
+                        <strong th:text="#{product.delivery.free}">Darmowa dostawa</strong>
+                        <span th:text="#{product.delivery.free.from}">od 199 zł</span>
+                    </div>
+                </div>
+                <div class="delivery-item">
+                    <span class="delivery-icon">📦</span>
+                    <div class="delivery-text">
+                        <strong th:text="#{product.delivery.24h}">Wysyłka w 24h</strong>
+                        <span th:text="#{product.delivery.24h.info}">Zamów do 15:00</span>
+                    </div>
+                </div>
+                <div class="delivery-item">
+                    <span class="delivery-icon">🔄</span>
+                    <div class="delivery-text">
+                        <strong th:text="#{product.returns}">30 dni na zwrot</strong>
+                        <span th:text="#{product.returns.info}">Bez pytań</span>
+                    </div>
+                </div>
+                <div class="delivery-item">
+                    <span class="delivery-icon">💳</span>
+                    <div class="delivery-text">
+                        <strong th:text="#{product.payments}">Bezpieczne płatności</strong>
+                        <span th:text="#{product.payments.info}">SSL & 3D Secure</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="product-tabs">
+        <div class="tab-header">
+            <button class="tab-btn active" onclick="switchTab(0)" th:text="#{product.tab.description}">Opis</button>
+            <button class="tab-btn" onclick="switchTab(1)" th:text="#{product.tab.specs}">Specyfikacja</button>
+            <button class="tab-btn" onclick="switchTab(2)" th:text="#{product.tab.ingredients}">Składniki</button>
+            <button class="tab-btn" onclick="switchTab(3)" id="reviews">
+                <span th:text="#{product.tab.reviews}">Opinie</span> (<span th:text="${reviewCount}">124</span>)
+            </button>
+        </div>
+
+        <div class="tab-content active">
+            <h3 th:text="#{product.description.title}">Opis produktu</h3>
+            <div th:utext="${product.description}">Opis produktu...</div>
+        </div>
+
+        <div class="tab-content">
+            <h3 th:text="#{product.specs.title}">Specyfikacja techniczna</h3>
+            <div class="specifications">
+                <div class="spec-item">
+                    <span class="spec-label" th:text="#{product.specs.brand}">Marka:</span>
+                    <span class="spec-value" th:text="${product.brand?.name}">Royal Canin</span>
+                </div>
+                <div class="spec-item">
+                    <span class="spec-label" th:text="#{product.specs.category}">Kategoria:</span>
+                    <span class="spec-value" th:text="${product.category?.name}">Karma</span>
+                </div>
+                <div class="spec-item" th:if="${product.weight != null}">
+                    <span class="spec-label" th:text="#{product.specs.weight}">Waga:</span>
+                    <span class="spec-value" th:text="${product.weight}">15 kg</span>
+                </div>
+                <div class="spec-item">
+                    <span class="spec-label" th:text="#{product.specs.availability}">Dostępność:</span>
+                    <span class="spec-value" th:if="${product.available}"
+                          th:text="#{product.specs.available}">Dostępny</span>
+                    <span class="spec-value" th:unless="${product.available}"
+                          th:text="#{product.specs.unavailable}">Niedostępny</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content">
+            <h3 th:text="#{product.ingredients.title}">Składniki</h3>
+            <div th:utext="${product.ingredients}">Składniki produktu...</div>
+        </div>
+
+        <div class="tab-content">
+            <h3 th:text="#{product.reviews.title}">Opinie klientów</h3>
+
+            <div class="review-summary">
+                <div class="overall-rating">
+                    <div class="overall-score" th:text="${#numbers.formatDecimal(product.rating, 1, 1)}">4.8</div>
+                    <div class="overall-stars">★★★★★</div>
+                    <div th:text="#{product.reviews.based.on} + ' ' + ${reviewCount} + ' ' + #{product.rating.reviews}">Na podstawie 124 opinii</div>
+                </div>
+
+                <div class="rating-bars">
+                    <div class="rating-bar-item">
+                        <span class="bar-label" th:text="#{product.reviews.stars5}">5 gwiazdek</span>
+                        <div class="bar"><div class="bar-fill" th:style="'width: ' + (${totalReviews > 0 ? (ratingDistribution[5] * 100 / totalReviews) : 0}) + '%;'"></div></div>
+                        <span class="bar-count" th:text="${ratingDistribution[5]}">0</span>
+                    </div>
+                    <div class="rating-bar-item">
+                        <span class="bar-label" th:text="#{product.reviews.stars4}">4 gwiazdki</span>
+                        <div class="bar"><div class="bar-fill" th:style="'width: ' + (${totalReviews > 0 ? (ratingDistribution[4] * 100 / totalReviews) : 0}) + '%;'"></div></div>
+                        <span class="bar-count" th:text="${ratingDistribution[4]}">0</span>
+                    </div>
+                    <div class="rating-bar-item">
+                        <span class="bar-label" th:text="#{product.reviews.stars3}">3 gwiazdki</span>
+                        <div class="bar"><div class="bar-fill" th:style="'width: ' + (${totalReviews > 0 ? (ratingDistribution[3] * 100 / totalReviews) : 0}) + '%;'"></div></div>
+                        <span class="bar-count" th:text="${ratingDistribution[3]}">0</span>
+                    </div>
+                    <div class="rating-bar-item">
+                        <span class="bar-label" th:text="#{product.reviews.stars2}">2 gwiazdki</span>
+                        <div class="bar"><div class="bar-fill" th:style="'width: ' + (${totalReviews > 0 ? (ratingDistribution[2] * 100 / totalReviews) : 0}) + '%;'"></div></div>
+                        <span class="bar-count" th:text="${ratingDistribution[2]}">0</span>
+                    </div>
+                    <div class="rating-bar-item">
+                        <span class="bar-label" th:text="#{product.reviews.stars1}">1 gwiazdka</span>
+                        <div class="bar"><div class="bar-fill" th:style="'width: ' + (${totalReviews > 0 ? (ratingDistribution[1] * 100 / totalReviews) : 0}) + '%;'"></div></div>
+                        <span class="bar-count" th:text="${ratingDistribution[1]}">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div th:each="review : ${reviews}" class="review-item">
+                <div class="review-header">
+                    <span class="reviewer-name" th:text="${review.user.fullName}">Anna K.</span>
+                    <span class="review-date"
+                          th:text="${#temporals.format(review.createdAt, 'dd MMMM yyyy')}">15 stycznia 2025</span>
+                </div>
+                <div class="review-stars" th:text="${'★'.repeat(review.rating) + '☆'.repeat(5 - review.rating)}">★★★★★</div>
+                <p class="review-text" th:text="${review.comment}">Świetna karma!</p>
+            </div>
+
+            <div th:if="${success}" class="review-info-message success">
+                <span th:text="${success}">Dziękujemy za opinię!</span>
+            </div>
+            <div th:if="${error}" class="review-info-message warning">
+                <span th:text="${error}">Wystąpił błąd</span>
+            </div>
+
+            <div th:if="${canReview}" class="review-form-container">
+                <h4 class="review-form-title" th:text="#{product.reviews.add}">✍️ Dodaj swoją opinię</h4>
+                <form th:action="@{/product/{id}/review(id=${product.id})}" method="post">
+                    <div class="star-rating-input" id="starRating">
+                        <input type="radio" name="rating" value="5" id="star5" required>
+                        <label for="star5" onclick="setRating(5)">★</label>
+                        <input type="radio" name="rating" value="4" id="star4">
+                        <label for="star4" onclick="setRating(4)">★</label>
+                        <input type="radio" name="rating" value="3" id="star3">
+                        <label for="star3" onclick="setRating(3)">★</label>
+                        <input type="radio" name="rating" value="2" id="star2">
+                        <label for="star2" onclick="setRating(2)">★</label>
+                        <input type="radio" name="rating" value="1" id="star1">
+                        <label for="star1" onclick="setRating(1)">★</label>
+                    </div>
+                    <textarea name="comment" class="review-textarea"
+                              th:placeholder="#{product.reviews.placeholder}"
+                              rows="4"></textarea>
+                    <button type="submit" class="review-submit-btn" th:text="#{product.reviews.submit}">📝 Dodaj opinię</button>
+                </form>
+            </div>
+
+            <div th:if="${hasReviewed}" class="review-info-message info">
+                <span th:text="#{product.reviews.thanks}">✅ Dziękujemy! Już oceniłeś ten produkt.</span>
+            </div>
+
+            <div th:if="${not canReview and not hasReviewed}" class="review-info-message info">
+                <span th:text="#{product.reviews.must.buy}">ℹ️ Aby dodać opinię, musisz kupić i otrzymać ten produkt.</span>
+            </div>
+        </div>
+    </div>
+
+    <section class="related-products" th:if="${relatedProducts != null and !relatedProducts.isEmpty()}">
+        <h2 class="section-title" th:text="#{product.related}">Podobne produkty</h2>
+        <div class="products-grid">
+            <a th:each="prod : ${relatedProducts}"
+               th:href="@{/product/{id}(id=${prod.id})}"
+               class="product-card">
+                <div class="product-card-image">
+                    <img th:if="${prod.mainImageUrl != null and (prod.mainImageUrl.startsWith('/') or prod.mainImageUrl.startsWith('http'))}"
+                         th:src="${prod.mainImageUrl}" th:alt="${prod.name}"
+                         style="max-width: 100%; max-height: 150px; object-fit: contain;">
+                    <span th:unless="${prod.mainImageUrl != null and (prod.mainImageUrl.startsWith('/') or prod.mainImageUrl.startsWith('http'))}"
+                          style="font-size: 48px;" th:text="${prod.mainImageUrl != null ? prod.mainImageUrl : '🦴'}">🦴</span>
+                </div>
+                <div class="product-card-info">
+                    <h3 class="product-card-name" th:text="${prod.name}">Produkt</h3>
+                    <div class="product-card-price"
+                         th:text="${#numbers.formatDecimal(prod.price, 1, 2)} + ' ' + #{general.currency}">0.00 zł</div>
+                </div>
+            </a>
+        </div>
+    </section>
+
+</div>
+
+<footer>
+    <p th:text="#{footer.copyright}">&copy; 2026 PetMarket - Wszystkie prawa zastrzeżone</p>
+</footer>
+
+<script th:inline="javascript">
+    const stockLimitMessage = /*[[#{cart.stock.limit.warning}]]*/ 'You cannot order more than {0} units of this product';
+
+    function increaseQty() {
+        const input = document.getElementById('quantity');
+        const currentValue = parseInt(input.value);
+        const maxStock = parseInt(input.getAttribute('data-stock')) || parseInt(input.max) || 99;
+        if (currentValue < maxStock) {
+            input.value = currentValue + 1;
+        }
+    }
+
+    function decreaseQty() {
+        const input = document.getElementById('quantity');
+        const currentValue = parseInt(input.value);
+        if (currentValue > parseInt(input.min)) {
+            input.value = currentValue - 1;
+        }
+    }
+
+    document.querySelector('form[action*="/cart/add"]')?.addEventListener('submit', function(e) {
+        const input = document.getElementById('quantity');
+        const maxStock = parseInt(input.getAttribute('data-stock')) || parseInt(input.max) || 99;
+        const currentValue = parseInt(input.value);
+
+        if (currentValue > maxStock) {
+            e.preventDefault();
+            alert(stockLimitMessage.replace('{0}', maxStock));
+            input.value = maxStock;
+            return false;
+        }
+    });
+
+    function switchTab(index) {
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabBtns.forEach((btn, i) => {
+            if (i === index) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+
+        tabContents.forEach((content, i) => {
+            if (i === index) {
+                content.classList.add('active');
+            } else {
+                content.classList.remove('active');
+            }
+        });
+    }
+
+    function switchMainImage(element) {
+        const imgUrl = element.getAttribute('data-img');
+        const mainImageContainer = document.getElementById('mainImage');
+
+        document.querySelectorAll('.thumbnail').forEach(t => t.classList.remove('active'));
+        element.classList.add('active');
+
+        if (imgUrl) {
+            const existingImg = mainImageContainer.querySelector('img');
+            if (existingImg) {
+                existingImg.src = imgUrl;
+            } else {
+                const newImg = document.createElement('img');
+                newImg.src = imgUrl;
+                newImg.style.maxWidth = '100%';
+                newImg.style.maxHeight = '400px';
+                newImg.style.objectFit = 'contain';
+                mainImageContainer.innerHTML = '';
+                mainImageContainer.appendChild(newImg);
+            }
+        }
+    }
+
+    function setRating(value) {
+        document.getElementById('star' + value).checked = true;
+        const labels = document.querySelectorAll('.star-rating-input label');
+        labels.forEach((label, index) => {
+            const starValue = 5 - index;
+            if (starValue <= value) {
+                label.style.color = '#fbbf24';
+            } else {
+                label.style.color = '#d1d5db';
+            }
+        });
+    }
+
+    document.querySelectorAll('.star-rating-input label').forEach(label => {
+        label.addEventListener('mouseenter', function() {
+            const starValue = parseInt(this.previousElementSibling.value);
+            const labels = document.querySelectorAll('.star-rating-input label');
+            labels.forEach((l, index) => {
+                const sv = 5 - index;
+                if (sv <= starValue) {
+                    l.style.color = '#fbbf24';
+                } else {
+                    l.style.color = '#d1d5db';
+                }
+            });
+        });
+    });
+
+    document.querySelector('.star-rating-input')?.addEventListener('mouseleave', function() {
+        const checked = document.querySelector('.star-rating-input input:checked');
+        if (checked) {
+            setRating(parseInt(checked.value));
+        } else {
+            document.querySelectorAll('.star-rating-input label').forEach(l => {
+                l.style.color = '#d1d5db';
+            });
+        }
+    });
+
+    async function toggleWishlist(button) {
+        const productId = button.getAttribute('data-product-id');
+        const heartSpan = button.querySelector('.heart');
+        const textSpan = button.querySelector('.wishlist-text');
+
+        button.disabled = true;
+
+        try {
+            const csrfToken = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
+            const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
+
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            if (csrfToken && csrfHeader) {
+                headers[csrfHeader] = csrfToken;
+            }
+
+            const response = await fetch('/wishlist/toggle', {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify({ productId: parseInt(productId) })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                if (data.added) {
+                    button.classList.add('active');
+                    heartSpan.textContent = '♥';
+                    if (textSpan) textSpan.textContent = 'W ulubionych';
+                    button.title = 'Usuń z ulubionych';
+                } else {
+                    button.classList.remove('active');
+                    heartSpan.textContent = '♡';
+                    if (textSpan) textSpan.textContent = 'Dodaj do ulubionych';
+                    button.title = 'Dodaj do ulubionych';
+                }
+            } else if (data.requireLogin) {
+                window.location.href = '/login?returnUrl=' + encodeURIComponent(window.location.pathname);
+            } else {
+                console.error('Wishlist error:', data.message);
+            }
+        } catch (error) {
+            console.error('Error toggling wishlist:', error);
+        } finally {
+            button.disabled = false;
+        }
+    }
+</script>
+
+</body>
+</html>

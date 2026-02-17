@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}" class="auth-page">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="#{register.title}">Utwórz konto - PetMarket</title>
+    <link rel="stylesheet" href="/css/public-styles.css">
+</head>
+<body>
+
+<div th:replace="~{fragments/header :: navbar}"></div>
+<div th:replace="~{fragments/header :: categoryBar}"></div>
+
+
+<div class="breadcrumb">
+    <a th:href="@{/}" th:text="#{breadcrumb.home}">Strona główna</a> / <span th:text="#{breadcrumb.register}">Rejestracja</span>
+</div>
+
+
+<main class="main-content">
+
+    
+    <div class="form-header">
+        <div class="paw-icon">🐾</div>
+        <h1 th:text="#{register.header}">Utwórz konto</h1>
+        <p th:text="#{register.welcome}">Dołącz do społeczności PetMarket!</p>
+    </div>
+
+    
+    <div class="form-card">
+
+        
+        <div th:if="${param.error}" class="alert alert-error">
+            ✗ <span th:text="#{register.error}">Email jest już zajęty lub wystąpił błąd podczas rejestracji.</span>
+        </div>
+
+        
+        <form th:action="@{/register}" th:object="${user}" method="post">
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="firstName" th:text="#{register.firstname} + ' *'">Imię *</label>
+                    <div class="input-wrapper">
+                        <span class="icon">👤</span>
+                        <input type="text"
+                               id="firstName"
+                               th:field="*{firstName}"
+                               th:placeholder="#{register.firstname.placeholder}"
+                               placeholder="Jan"
+                               required
+                               autofocus>
+                    </div>
+                    <p th:if="${#fields.hasErrors('firstName')}" th:errors="*{firstName}" class="error-msg"></p>
+                </div>
+
+                <div class="form-group">
+                    <label for="lastName" th:text="#{register.lastname} + ' *'">Nazwisko *</label>
+                    <div class="input-wrapper">
+                        <span class="icon">👤</span>
+                        <input type="text"
+                               id="lastName"
+                               th:field="*{lastName}"
+                               th:placeholder="#{register.lastname.placeholder}"
+                               placeholder="Kowalski"
+                               required>
+                    </div>
+                    <p th:if="${#fields.hasErrors('lastName')}" th:errors="*{lastName}" class="error-msg"></p>
+                </div>
+            </div>
+
+            
+            <div class="form-group">
+                <label for="email" th:text="#{register.email} + ' *'">Email *</label>
+                <div class="input-wrapper">
+                    <span class="icon">✉️</span>
+                    <input type="email"
+                           id="email"
+                           th:field="*{email}"
+                           th:placeholder="#{register.email.placeholder}"
+                           placeholder="twoj@email.pl"
+                           required>
+                </div>
+            </div>
+
+            
+            <div class="form-group">
+                <label for="password" th:text="#{register.password} + ' *'">Hasło *</label>
+                <div class="input-wrapper">
+                    <span class="icon">🔒</span>
+                    <input type="password"
+                           id="password"
+                           th:field="*{password}"
+                           th:placeholder="#{register.password.placeholder}"
+                           placeholder="Minimum 6 znaków"
+                           required
+                           minlength="6">
+                </div>
+                <div class="password-hint" th:text="#{register.password.hint}">
+                    Hasło musi zawierać minimum 6 znaków
+                </div>
+            </div>
+
+            
+            <div class="form-group">
+                <label class="checkbox-container">
+                    <input type="checkbox" id="terms" required>
+                    <span>
+                        <span th:text="#{register.terms}">Akceptuję</span>
+                        <a href="#" onclick="event.preventDefault();" th:text="#{register.terms.regulations}">regulamin</a>
+                        <span th:text="#{register.terms.and}">i</span>
+                        <a href="#" onclick="event.preventDefault();" th:text="#{register.terms.privacy}">politykę prywatności</a>
+                    </span>
+                </label>
+            </div>
+
+            
+            <button type="submit" class="btn-register" th:text="#{register.submit}">Zarejestruj się</button>
+        </form>
+
+        
+        <div class="form-footer-link">
+            <span th:text="#{register.has.account}">Masz już konto?</span> <a th:href="@{/login}" th:text="#{register.login.link}">Zaloguj się</a>
+        </div>
+    </div>
+</main>
+
+
+<footer>
+    <p th:text="#{footer.copyright}">&copy; 2026 PetMarket - Wszystkie prawa zastrzeżone</p>
+</footer>
+
+<script th:inline="javascript">
+    const passwordInput = document.getElementById('password');
+    const defaultHint = /*[[#{register.password.hint}]]*/ 'Hasło musi zawierać minimum 6 znaków';
+    const acceptableHint = /*[[#{register.password.acceptable}]]*/ '✔ Hasło akceptowalne';
+    const strongHint = /*[[#{register.password.strong}]]*/ '✔ Silne hasło!';
+
+    passwordInput?.addEventListener('input', function() {
+        const length = this.value.length;
+        const hint = this.parentElement.nextElementSibling;
+
+        if (length === 0) {
+            hint.textContent = defaultHint;
+            hint.style.color = 'var(--text-muted)';
+        } else if (length < 6) {
+            hint.textContent = `Jeszcze ${6 - length} znaków...`;
+            hint.style.color = 'var(--error-text)';
+        } else if (length < 8) {
+            hint.textContent = acceptableHint;
+            hint.style.color = 'var(--accent-orange)';
+        } else {
+            hint.textContent = strongHint;
+            hint.style.color = 'var(--success-text)';
+        }
+    });
+</script>
+
+</body>
+</html>

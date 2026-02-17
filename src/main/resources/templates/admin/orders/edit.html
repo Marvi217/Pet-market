@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Edytuj zamówienie - PetMarket</title>
+    <link rel="stylesheet" th:href="@{/css/admin-styles.css}">
+</head>
+<body>
+<div class="admin-wrapper">
+    <aside th:replace="~{fragments/admin-fragments :: sidebar('orders')}"></aside>
+
+    <main class="admin-main">
+        <header th:replace="~{fragments/admin-fragments :: admin-topbar}"></header>
+
+        <div class="admin-content">
+            <div class="page-header">
+                <h1 th:text="'Edycja zamówienia #' + ${order.orderNumber}">Edycja zamówienia</h1>
+            </div>
+
+            <form th:action="@{/admin/orders/{id}/edit(id=${order.id})}" th:object="${order}" method="post" class="card">
+                <div class="card-body">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+
+                        <div class="form-group">
+                            <label>Status zamówienia</label>
+                            <select th:field="*{status}" class="form-control">
+                                <option th:each="s : ${orderStatuses}" th:value="${s}" th:text="${s.displayName}"></option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Status płatności <small style="color: #888;">(tylko do odczytu)</small></label>
+                            <div class="form-control" style="background-color: #f5f5f5; cursor: not-allowed; display: flex; align-items: center; gap: 8px;">
+                                <span class="badge" th:classappend="${'badge-' + order.paymentStatus.color}" th:text="${order.paymentStatus.displayName}">Status</span>
+                            </div>
+                            <input type="hidden" th:field="*{paymentStatus}">
+                        </div>
+
+                        <div class="form-group" style="grid-column: span 2;">
+                            <label>Uwagi administratora</label>
+                            <textarea th:field="*{adminNotes}" class="form-control" rows="3"></textarea>
+                        </div>
+
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a th:href="@{/admin/orders/{id}(id=${order.id})}" class="btn btn-secondary">Anuluj</a>
+                    <button type="submit" class="btn btn-primary">Zapisz zmiany</button>
+                </div>
+            </form>
+        </div>
+    </main>
+</div>
+</body>
+</html>

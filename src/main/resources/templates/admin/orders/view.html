@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'Zamówienie #' + ${order.id} + ' - Panel Admina'">Szczegóły Zamówienia</title>
+    <link rel="stylesheet" th:href="@{/css/admin-styles.css}">
+</head>
+<body>
+<div class="admin-wrapper">
+    <aside th:replace="~{fragments/admin-fragments :: sidebar('orders')}"></aside>
+
+    <main class="admin-main">
+        <div class="admin-content">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">Zamówienie <span th:text="'#' + ${order.id}">#123</span></h1>
+                    <p class="page-subtitle" th:text="'Złożone: ' + ${#temporals.format(order.orderDate, 'dd.MM.yyyy HH:mm')}"></p>
+                </div>
+                <div class="page-actions">
+                    <a th:href="@{/admin/orders}" class="btn btn-secondary">Powrót do listy</a>
+                    <a th:href="@{/admin/orders/{id}/edit(id=${order.id})}" class="btn btn-primary">Edytuj dane</a>
+                </div>
+            </div>
+
+            <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+            <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
+
+                <div class="order-left">
+                    <div class="card">
+                        <div class="card-header"><h2 class="card-title">Produkty</h2></div>
+                        <div class="card-body" style="padding: 0;">
+                            <table class="admin-table">
+                                <thead>
+                                <tr>
+                                    <th>Produkt</th>
+                                    <th>Cena jedn.</th>
+                                    <th>Ilość</th>
+                                    <th>Suma</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr th:each="item : ${order.items}">
+                                    <td>
+                                        <div style="font-weight: 600;" th:text="${item.product.name}">Produkt</div>
+                                        <small style="color: gray;" th:text="'SKU: ' + ${item.product.id}"></small>
+                                    </td>
+                                    <td th:text="${#numbers.formatDecimal(item.price, 1, 2)} + ' zł'">0.00 zł</td>
+                                    <td th:text="${item.quantity}">1</td>
+                                    <td th:text="${#numbers.formatDecimal(item.price * item.quantity, 1, 2)} + ' zł'">0.00 zł</td>
+                                </tr>
+                                </tbody>
+                                <tfoot>
+                                <tr>
+                                    <td colspan="3" style="text-align: right; font-weight: bold;">Łącznie:</td>
+                                    <td style="font-weight: bold; font-size: 1.1em; color: var(--brand-green);"
+                                        th:text="${#numbers.formatDecimal(order.totalAmount, 1, 2)} + ' zł'">0.00 zł</td>
+                                </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    
+                    <div class="card" style="margin-top: 20px;" th:if="${order.status.name() != 'CANCELLED'}">
+                        <div class="card-header"><h2 class="card-title">Logistyka</h2></div>
+                        <div class="card-body">
+                            
+                            <div style="margin-bottom: 20px;">
+                                <label>Przewoźnik <small style="color: #888;">(wybrany przez kupującego)</small></label>
+                                <div class="form-control" style="background-color: #f5f5f5; cursor: not-allowed;">
+                                    <span th:if="${order.deliveryMethod != null}" th:text="${order.deliveryMethod.description}">Brak</span>
+                                    <span th:if="${order.deliveryMethod == null}" style="color: #888;">Nie wybrano</span>
+                                </div>
+                            </div>
+
+                            
+                            <th:block th:if="${order.trackingNumber == null || order.trackingNumber.isEmpty()}">
+                                <div style="display: grid; grid-template-columns: 1fr auto; gap: 15px; align-items: flex-end;">
+                                    <div>
+                                        <label>Numer przesyłki</label>
+                                        <p style="color: #888; font-size: 13px; margin: 5px 0;">Kliknij przycisk, aby wygenerować numer przesyłki</p>
+                                    </div>
+                                    <form th:action="@{/admin/orders/{id}/generate-tracking(id=${order.id})}" method="post">
+                                        <button type="submit" class="btn btn-primary">Generuj numer przesyłki</button>
+                                    </form>
+                                </div>
+                            </th:block>
+
+                            
+                            <th:block th:if="${order.trackingNumber != null && !order.trackingNumber.isEmpty()}">
+                                <div>
+                                    <label>Numer przesyłki</label>
+                                    <div class="form-control" style="background-color: #e8f5e9; border: 1px solid #4caf50; display: flex; align-items: center; justify-content: space-between;">
+                                        <span style="font-weight: 600; font-family: monospace; font-size: 1.1em;" th:text="${order.trackingNumber}">123456789</span>
+                                        <span class="badge badge-success">✓ Wygenerowany</span>
+                                    </div>
+                                </div>
+                            </th:block>
+                        </div>
+                    </div>
+
+                    
+                    <div class="card" style="margin-top: 20px;" th:if="${order.status.name() == 'CANCELLED'}">
+                        <div class="card-header"><h2 class="card-title">Logistyka</h2></div>
+                        <div class="card-body">
+                            <p style="color: #dc3545; text-align: center; padding: 20px;">
+                                ⚠️ Zamówienie anulowane - generowanie numeru przesyłki jest zablokowane.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="order-right">
+                    <div class="card">
+                        <div class="card-header"><h2 class="card-title">Zarządzanie statusem</h2></div>
+                        <div class="card-body">
+                            <form th:action="@{/admin/orders/{id}/status(id=${order.id})}" method="post" style="margin-bottom: 20px;">
+                                <label>Status zamówienia</label>
+                                <select name="status" class="form-control" onchange="this.form.submit()">
+                                    <option th:each="st : ${orderStatuses}"
+                                            th:value="${st}"
+                                            th:text="${st.displayName}"
+                                            th:selected="${st == order.status}"></option>
+                                </select>
+                            </form>
+
+                            
+                            <div style="margin-top: 15px;">
+                                <label>Status płatności</label>
+                                <div class="form-control" style="background-color: #f5f5f5; cursor: not-allowed; display: flex; align-items: center; gap: 8px;">
+                                    <span class="badge" th:classappend="${'badge-' + order.paymentStatus.color}" th:text="${order.paymentStatus.displayName}">Status</span>
+                                    <small style="color: #888;">(tylko do odczytu)</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card" style="margin-top: 20px;">
+                        <div class="card-header"><h2 class="card-title">Klient</h2></div>
+                        <div class="card-body">
+                            
+                            <th:block th:if="${order.user != null}">
+                                <p><strong th:text="${order.user.firstName + ' ' + order.user.lastName}">Jan Kowalski</strong></p>
+                                <p style="color: var(--text-muted); font-size: 14px;" th:text="${order.user.email}">jan@email.com</p>
+                            </th:block>
+                            <th:block th:if="${order.user == null}">
+                                <p><strong th:text="${order.guestName}">Gość</strong></p>
+                                <p style="color: var(--text-muted); font-size: 14px;" th:text="${order.guestEmail}">guest@email.com</p>
+                                <p th:if="${order.guestPhone}" style="color: var(--text-muted); font-size: 14px;">Tel: <span th:text="${order.guestPhone}"></span></p>
+                            </th:block>
+                            <hr style="margin: 15px 0; border: 0; border-top: 1px solid #eee;">
+                            <h4 style="font-size: 14px; text-transform: uppercase; color: gray;">Adres dostawy</h4>
+                            <th:block th:if="${order.shippingAddress != null}">
+                                <p>
+                                    <span th:text="${order.shippingAddress.street}">Ulica</span><br>
+                                    <span th:text="${order.shippingAddress.zipCode}">00-000</span>
+                                    <span th:text="${order.shippingAddress.city}">Miasto</span>
+                                </p>
+                            </th:block>
+                            <th:block th:if="${order.shippingAddress == null}">
+                                <p style="color: #888;">Brak adresu (odbiór osobisty lub paczkomat)</p>
+                            </th:block>
+                            
+                            <th:block th:if="${order.deliveryMethod != null and order.deliveryMethod.name() == 'LOCKER'}">
+                                <p style="margin-top: 10px; font-size: 13px; color: #333; background: #fffdf5; padding: 8px; border-radius: 4px; border-left: 3px solid #ffcd00;">
+                                    <strong>📦 Paczkomat InPost</strong>
+                                    <span th:if="${order.notes != null}" th:text="${order.notes}"></span>
+                                </p>
+                            </th:block>
+                        </div>
+                    </div>
+
+                    
+                    <div style="margin-top: 20px;" th:if="${order.status.name() != 'CANCELLED' and order.status.name() != 'DELIVERED' and order.status.name() != 'RETURNED' and order.status.name() != 'REFUNDED'}">
+                        <form th:action="@{/admin/orders/{id}/cancel(id=${order.id})}" method="post"
+                              onsubmit="return confirm('Czy na pewno chcesz anulować to zamówienie?')">
+                            <button type="submit" class="btn btn-error" style="width: 100%;">Anuluj zamówienie</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>

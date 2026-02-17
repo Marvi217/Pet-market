@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/admin-fragments :: admin-head('Promocje')}"></head>
+<body>
+<div class="admin-wrapper">
+    <aside th:replace="~{fragments/admin-fragments :: sidebar('promotions')}"></aside>
+
+    <main class="admin-main">
+        <div class="admin-content">
+            <div th:if="${success}" class="alert alert-success" th:text="${success}" style="margin-bottom: 20px; padding: 15px; background: #d4edda; color: #155724; border-radius: 8px;"></div>
+            <div th:if="${error}" class="alert alert-danger" th:text="${error}" style="margin-bottom: 20px; padding: 15px; background: #f8d7da; color: #721c24; border-radius: 8px;"></div>
+
+            <div class="breadcrumb">
+                <a th:href="@{/admin/main/dashboard}">Dashboard</a>
+                <span class="breadcrumb-separator">›</span>
+                <span>Promocje</span>
+            </div>
+
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">🎁 Promocje</h1>
+                    <p class="page-subtitle">Zarządzaj promocjami i kodami rabatowymi</p>
+                </div>
+                <div class="page-actions">
+                    <a th:href="@{/admin/promotions/new}" class="btn btn-primary">➕ Nowa promocja</a>
+                </div>
+            </div>
+
+            <div class="stats-grid" style="margin-bottom: 25px;">
+                <div class="stat-card">
+                    <div class="stat-icon green">✅</div>
+                    <div class="stat-info">
+                        <h3 th:text="${activePromotionsCount != null ? activePromotionsCount : 0}">0</h3>
+                        <p>Aktywne</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon blue">📅</div>
+                    <div class="stat-info">
+                        <h3 th:text="${scheduledPromotionsCount != null ? scheduledPromotionsCount : 0}">0</h3>
+                        <p>Zaplanowane</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon orange">💰</div>
+                    <div class="stat-info">
+                        <h3 th:text="${totalDiscountsMonth != null ? #numbers.formatDecimal(totalDiscountsMonth, 1, 'WHITESPACE', 2, 'COMMA') + ' zł' : '0,00 zł'}">0,00 zł</h3>
+                        <p>Rabat (miesiąc)</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon purple">🎫</div>
+                    <div class="stat-info">
+                        <h3 th:text="${totalUses != null ? totalUses : 0}">0</h3>
+                        <p>Użycia promocji</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tabs" style="margin-bottom: 20px; display: flex; gap: 10px; border-bottom: 1px solid #eee;">
+                <a th:href="@{/admin/promotions}" class="tab-item"
+                   th:style="${currentStatus == null ? 'border-bottom: 2px solid var(--brand-green); font-weight: bold; padding: 10px;' : 'padding: 10px; color: #666; text-decoration: none;'}">Wszystkie</a>
+                <a th:href="@{/admin/promotions(status='ACTIVE')}" class="tab-item"
+                   th:style="${currentStatus == 'ACTIVE' ? 'border-bottom: 2px solid var(--brand-green); font-weight: bold; padding: 10px;' : 'padding: 10px; color: #666; text-decoration: none;'}">Aktywne</a>
+            </div>
+
+            <div class="card">
+                <div class="card-body" style="padding: 0;">
+                    <div class="table-container">
+                        <table class="admin-table" style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                            <tr style="background: #f8f9fa; text-align: left;">
+                                <th style="padding: 15px;">Nazwa</th>
+                                <th>Typ</th>
+                                <th>Rabat</th>
+                                <th>Kod</th>
+                                <th>Okres</th>
+                                <th>Wykorzystanie</th>
+                                <th>Status</th>
+                                <th class="actions-col">Akcje</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="promo : ${promotions}" style="border-bottom: 1px solid #eee;">
+                                <td style="padding: 15px;">
+                                    <strong th:text="${promo.name}">Nazwa</strong>
+                                    <div style="font-size: 12px; color: #888;" th:text="${promo.description}">Opis</div>
+                                </td>
+                                <td>
+                                    <span class="badge badge-info" th:text="${promo.type}">PERCENTAGE</span>
+                                </td>
+                                <td>
+                                    <strong style="color: #e67e22;"
+                                            th:text="${promo.type.toString() == 'PERCENTAGE_DISCOUNT' ? '-' + promo.discountPercentage + '%' : '-' + promo.discountAmount + ' zł'}">
+                                    </strong>
+                                </td>
+                                <td>
+                                    <code style="background: #f4f4f4; padding: 2px 5px; border-radius: 4px;"
+                                          th:text="${promo.code != null and promo.code != '' ? promo.code : '-'}">KOD</code>
+                                </td>
+                                <td style="font-size: 13px;">
+                                    <span th:if="${promo.startDate != null}" th:text="${#temporals.format(promo.startDate, 'dd.MM')}"></span>
+                                    <span th:if="${promo.startDate != null and promo.endDate != null}"> - </span>
+                                    <span th:if="${promo.endDate != null}" th:text="${#temporals.format(promo.endDate, 'dd.MM.yyyy')}"></span>
+                                    <span th:if="${promo.startDate == null and promo.endDate == null}">Bez limitu</span>
+                                </td>
+                                <td th:text="${promo.currentUsage + ' / ' + (promo.maxUsage != null ? promo.maxUsage : '∞')}">0 / ∞</td>
+                                <td>
+                                        <span class="badge"
+                                              th:classappend="${promo.active ? 'badge-success' : 'badge-secondary'}"
+                                              th:text="${promo.active ? 'Aktywna' : 'Nieaktywna'}">
+                                        </span>
+                                </td>
+                                <td class="actions-col">
+                                    <div class="action-buttons" style="display: flex; gap: 5px;">
+                                        <a th:href="@{/admin/promotions/{id}/edit(id=${promo.id})}" class="action-btn edit">✏️</a>
+                                        <form th:action="@{/admin/promotions/delete/{id}(id=${promo.id})}" method="post"
+                                              onsubmit="return confirm('Czy na pewno chcesz usunąć tę promocję?')">
+                                            <button type="submit" class="action-btn delete" style="border:none; background:none; cursor:pointer;">🗑️</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(promotions)}">
+                                <td colspan="8" style="text-align: center; padding: 30px; color: #999;">Brak dostępnych promocji.</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>

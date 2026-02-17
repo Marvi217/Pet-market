@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/admin-fragments :: admin-head('Kategorie')}"></head>
+<body>
+<div class="admin-wrapper">
+    <div th:replace="~{fragments/admin-fragments :: sidebar('categories')}"></div>
+
+    <main class="admin-main">
+        <div class="admin-content">
+            <div class="breadcrumb">
+                <a th:href="@{/admin/dashboard}">Dashboard</a>
+                <span class="breadcrumb-separator">›</span>
+                <span>Kategorie</span>
+            </div>
+
+            <div class="page-header">
+                <h1 class="page-title">📁 Kategorie</h1>
+                <div class="page-actions">
+                    <a th:href="@{/admin/categories/new}" class="btn btn-primary">+ Dodaj kategorię</a>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="table-container">
+                    <table class="admin-table">
+                        <thead>
+                        <tr>
+                            <th>Nazwa</th>
+                            <th>Status</th>
+                            <th class="actions-col">Akcje</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="cat : ${categories.content}">
+                            <td><strong th:text="${cat.name}"></strong></td>
+                            <td>
+                                    <span class="badge"
+                                          th:classappend="${cat.active} ? 'badge-success' : 'badge-secondary'"
+                                          th:text="${cat.active} ? 'Aktywna' : 'Nieaktywna'">
+                                    </span>
+                            </td>
+                            <td class="actions-col">
+                                <div class="action-buttons">
+                                    <a th:href="@{/admin/categories/{id}/edit(id=${cat.id})}" class="action-btn edit">✏️</a>
+                                    <form th:action="@{/admin/categories/{id}/delete(id=${cat.id})}" method="post" style="display:inline;">
+                                        <button type="submit" class="action-btn delete" onclick="return confirm('Usunąć?')">🗑️</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>

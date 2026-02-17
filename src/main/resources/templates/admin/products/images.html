@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Zarządzanie zdjęciami produktu</title>
+    <link rel="stylesheet" th:href="@{/css/admin-styles.css}">
+</head>
+<body>
+<div class="admin-wrapper">
+    <aside th:replace="~{fragments/admin-fragments :: sidebar('products')}"></aside>
+    <main class="admin-main">
+        <div class="admin-content">
+            <div class="breadcrumb">
+                <a th:href="@{/admin}">Dashboard</a>
+                <span class="breadcrumb-separator">›</span>
+                <a th:href="@{/admin/products}">Produkty</a>
+                <span class="breadcrumb-separator">›</span>
+                <span th:text="${product.name}">Produkt</span>
+                <span class="breadcrumb-separator">›</span>
+                <span>Zdjęcia</span>
+            </div>
+
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">🖼️ Zdjęcia produktu</h1>
+                    <p class="page-subtitle" th:text="${product.name}">Nazwa produktu</p>
+                </div>
+                <div class="page-actions">
+                    <a th:href="@{/admin/products/{id}/edit(id=${product.id})}" class="btn btn-secondary">← Powrót do edycji</a>
+                </div>
+            </div>
+
+            <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+            <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+            
+            <div class="alert alert-info" style="margin-bottom: 20px; background: #e0f2fe; border: 1px solid #0284c7; padding: 15px; border-radius: 8px;">
+                ℹ️ <strong>Kolejność zdjęć:</strong> Użyj przycisków ↑ i ↓ aby zmienić kolejność. Pierwsze zdjęcie (z najniższym numerem) jest automatycznie ustawiane jako główne.
+            </div>
+
+            
+            <div class="card" style="margin-bottom: 20px;">
+                <div class="card-header">
+                    <h3>📤 Dodaj nowe zdjęcia</h3>
+                </div>
+                <div class="card-body">
+                    <form th:action="@{/admin/products/{id}/images/upload(id=${product.id})}"
+                          method="post" enctype="multipart/form-data">
+                        <div class="form-group">
+                            <input type="file" name="images" class="form-control" accept="image/*" multiple required>
+                            <small style="color: #666; display: block; margin-top: 5px;">
+                                Obsługiwane formaty: JPG, PNG, GIF, WEBP. Maksymalny rozmiar: 5MB na plik.
+                            </small>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="margin-top: 10px;">
+                            📤 Prześlij zdjęcia
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            
+            <div class="card">
+                <div class="card-header">
+                    <h3>📸 Obecne zdjęcia (<span th:text="${images != null ? images.size() : 0}">0</span>)</h3>
+                </div>
+                <div class="card-body">
+                    <div th:if="${images == null or images.isEmpty()}" style="text-align: center; padding: 40px; color: #666;">
+                        Brak zdjęć dla tego produktu
+                    </div>
+
+                    <div th:if="${images != null and !images.isEmpty()}"
+                         style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px;">
+                        <div th:each="img, iterStat : ${images}"
+                             style="border: 1px solid #ddd; border-radius: 8px; padding: 10px; background: #fff;"
+                             th:styleappend="${iterStat.first} ? 'border: 2px solid #16a34a;' : ''">
+                            <div style="position: relative;">
+                                <img th:src="${img.imageUrl}" alt="Product image"
+                                     style="width: 100%; height: 150px; object-fit: cover; border-radius: 6px;">
+                                <span th:if="${iterStat.first}"
+                                      style="position: absolute; top: 5px; left: 5px; background: #16a34a; color: white; font-size: 11px; padding: 3px 8px; border-radius: 4px;">
+                                    ⭐ Główne
+                                </span>
+                            </div>
+
+                            <div style="margin-top: 10px; font-size: 12px; color: #666;">
+                                <div>Pozycja: <strong th:text="${img.displayOrder}">0</strong></div>
+                            </div>
+
+                            <div style="margin-top: 10px; display: flex; gap: 5px; flex-wrap: wrap; align-items: center;">
+                                
+                                <form th:unless="${iterStat.first}"
+                                      th:action="@{/admin/products/{productId}/images/{imageId}/move-up(productId=${product.id}, imageId=${img.id})}"
+                                      method="post" style="display: inline;">
+                                    <button type="submit" class="btn btn-sm btn-outline" title="Przesuń w górę">
+                                        ↑
+                                    </button>
+                                </form>
+                                <span th:if="${iterStat.first}" class="btn btn-sm btn-disabled" style="opacity: 0.3; cursor: not-allowed;">↑</span>
+
+                                
+                                <form th:unless="${iterStat.last}"
+                                      th:action="@{/admin/products/{productId}/images/{imageId}/move-down(productId=${product.id}, imageId=${img.id})}"
+                                      method="post" style="display: inline;">
+                                    <button type="submit" class="btn btn-sm btn-outline" title="Przesuń w dół">
+                                        ↓
+                                    </button>
+                                </form>
+                                <span th:if="${iterStat.last}" class="btn btn-sm btn-disabled" style="opacity: 0.3; cursor: not-allowed;">↓</span>
+
+                                
+                                <form th:action="@{/admin/products/{productId}/images/{imageId}/delete(productId=${product.id}, imageId=${img.id})}"
+                                      method="post" style="display: inline; margin-left: auto;"
+                                      onsubmit="return confirm('Czy na pewno chcesz usunąć to zdjęcie?')">
+                                    <button type="submit" class="btn btn-sm btn-danger" title="Usuń">
+                                        🗑️
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<style>
+    .btn-sm {
+        padding: 5px 10px;
+        font-size: 12px;
+        min-width: 32px;
+        text-align: center;
+    }
+    .btn-outline {
+        background: transparent;
+        border: 1px solid #ddd;
+        color: #333;
+        cursor: pointer;
+    }
+    .btn-outline:hover {
+        background: #f5f5f5;
+    }
+    .btn-danger {
+        background: #dc2626;
+        color: white;
+        border: none;
+        cursor: pointer;
+    }
+    .btn-danger:hover {
+        background: #b91c1c;
+    }
+    .btn-disabled {
+        background: transparent;
+        border: 1px solid #ddd;
+        color: #999;
+    }
+</style>
+</body>
+</html>

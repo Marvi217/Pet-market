@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        <span th:text="#{order.details.title}">Zamówienie</span> #<span th:text="${order.orderNumber}">123</span> - PetMarket
+    </title>
+    <link rel="stylesheet" href="/css/account-styles.css">
+    <link rel="stylesheet" href="/css/public-styles.css">
+    <style>
+        .order-container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+        .back-link { display: inline-flex; align-items: center; gap: 8px; color: var(--text-muted); text-decoration: none; font-size: 15px; margin-bottom: 25px; transition: all 0.3s; }
+        .back-link:hover { color: var(--brand-green); gap: 12px; }
+        .order-header { background: white; padding: 30px; border-radius: 15px; margin-bottom: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+        .order-title { font-size: 28px; font-weight: 700; margin: 0 0 20px 0; color: var(--text-dark); }
+        .order-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; padding: 20px; background: var(--bg-light); border-radius: 10px; }
+        .meta-item { display: flex; flex-direction: column; gap: 5px; }
+        .meta-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .meta-value { font-size: 16px; font-weight: 600; color: var(--text-dark); }
+        .order-status { padding: 8px 20px; border-radius: 25px; font-size: 14px; font-weight: 600; display: inline-block; }
+        .content-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 25px; }
+        .products-section, .sidebar-section { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+        .sidebar-section { padding: 25px; margin-bottom: 20px; }
+        .section-title { font-size: 20px; font-weight: 700; margin: 0 0 20px 0; color: var(--text-dark); }
+        .product-item { display: flex; gap: 20px; padding: 20px 0; border-bottom: 1px solid #f5f5f5; }
+        .product-item:first-child { padding-top: 0; }
+        .product-item:last-child { border-bottom: none; padding-bottom: 0; }
+        .product-image { width: 80px; height: 80px; background: var(--bg-light); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 40px; flex-shrink: 0; }
+        .product-details { flex: 1; }
+        .product-name { font-size: 16px; font-weight: 600; margin: 0 0 5px 0; color: var(--text-dark); }
+        .product-meta { font-size: 14px; color: var(--text-muted); margin: 0; }
+        .product-pricing { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+        .product-price { font-size: 18px; font-weight: 700; color: var(--brand-green); }
+        .product-quantity { font-size: 14px; color: var(--text-muted); }
+        .summary-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f5f5f5; }
+        .summary-row:last-child { border-bottom: none; }
+        .summary-row.total { padding-top: 15px; border-top: 2px solid #eee; font-size: 18px; font-weight: 700; }
+        .summary-label { color: var(--text-muted); }
+        .summary-value { font-weight: 600; color: var(--text-dark); }
+        .summary-value.total { color: var(--brand-green); font-size: 22px; }
+        .address-info { line-height: 1.8; }
+        .address-info p { margin: 5px 0; font-size: 14px; color: var(--text-dark); }
+        .address-title { font-weight: 700; margin-bottom: 8px !important; }
+        .action-buttons { display: flex; flex-direction: column; gap: 10px; }
+        .btn-cancel { border: 2px solid #dc2626; background: white; color: #dc2626; padding: 12px 20px; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.3s; text-decoration: none; text-align: center; display: inline-block; }
+        .btn-cancel:hover { background: #dc2626; color: white; }
+        @media (max-width: 968px) { .content-grid { grid-template-columns: 1fr; } .order-meta { grid-template-columns: 1fr; } .product-item { flex-direction: column; } .product-pricing { align-items: flex-start; text-align: left; } }
+    </style>
+</head>
+<body>
+
+<div th:replace="~{fragments/header :: navbar}"></div>
+<div th:replace="~{fragments/header :: categoryBar}"></div>
+
+<div class="order-container">
+
+    <div th:if="${success}" class="alert alert-success">
+        <strong>✔</strong> <span th:text="${success}">Sukces</span>
+    </div>
+
+    <div th:if="${error}" class="alert alert-error">
+        <strong>✗</strong> <span th:text="${error}">Błąd</span>
+    </div>
+
+    <div th:if="${order.status == T(com.example.petmarket.enums.OrderStatus).CANCELLED}" class="alert alert-error">
+        <strong>⚠️ <span th:text="#{order.details.cancelled}">Zamówienie anulowane</span></strong>
+        <p style="margin: 5px 0 0 0; font-size: 14px;" th:text="#{order.details.cancelled.message}">
+            To zamówienie zostało anulowane i nie zostanie zrealizowane.
+        </p>
+    </div>
+
+    <a th:href="@{/account/orders}" class="back-link">
+        ← <span th:text="#{order.details.back}">Powrót do listy zamówień</span>
+    </a>
+
+    <div class="order-header">
+        <h1 class="order-title">
+            <span th:text="#{order.details.title}">Zamówienie</span> #<span th:text="${order.orderNumber}">123</span>
+        </h1>
+
+        <div class="order-meta">
+            <div class="meta-item">
+                <span class="meta-label" th:text="#{order.details.date}">Data zamówienia</span>
+                <span class="meta-value" th:text="${#temporals.format(order.orderDate, 'dd MMMM yyyy, HH:mm')}">
+                    01 stycznia 2026, 14:30
+                </span>
+            </div>
+
+            <div class="meta-item">
+                <span class="meta-label" th:text="#{order.details.status}">Status</span>
+                <span th:class="'order-status status-' + ${#strings.toLowerCase(order.status)}"
+                      th:text="${order.statusDisplay}">W trakcie realizacji</span>
+            </div>
+
+            <div class="meta-item" th:if="${order.paymentMethod != null}">
+                <span class="meta-label" th:text="#{order.details.payment}">Metoda płatności</span>
+                <span class="meta-value" th:text="${order.paymentMethod}">Przelew</span>
+            </div>
+
+            <div class="meta-item" th:if="${order.deliveryMethod != null}">
+                <span class="meta-label" th:text="#{order.details.delivery}">Sposób dostawy</span>
+                <span class="meta-value" th:text="${order.deliveryMethod}">Kurier DPD</span>
+            </div>
+
+            <div class="meta-item" th:if="${order.canBeCancelled()}">
+                <span class="meta-label" th:text="#{order.details.cancellation}">Możliwość anulowania</span>
+                <span class="meta-value" style="color: #059669;">
+                    <span th:text="#{order.details.time.left(${order.hoursUntilCancellationExpires})}">Jeszcze 2 godz.</span>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="content-grid">
+        <div>
+            <div class="products-section">
+                <h2 class="section-title" th:text="#{order.details.products}">Zamówione produkty</h2>
+
+                <a th:each="item : ${order.items}" class="product-item" th:href="@{/product/{id}(id=${item.product.id})}" style="text-decoration: none; color: inherit; cursor: pointer;">
+                    <div class="product-image">
+                        <img th:if="${item.product.mainImageUrl != null and (item.product.mainImageUrl.startsWith('/') or item.product.mainImageUrl.startsWith('http'))}"
+                             th:src="${item.product.mainImageUrl}" th:alt="${item.product.name}"
+                             style="max-width: 80px; max-height: 80px; object-fit: contain;">
+                        <span th:unless="${item.product.mainImageUrl != null and (item.product.mainImageUrl.startsWith('/') or item.product.mainImageUrl.startsWith('http'))}"
+                              style="font-size: 32px;" th:text="${item.product.mainImageUrl != null ? item.product.mainImageUrl : '🦴'}">🦴</span>
+                    </div>
+
+                    <div class="product-details">
+                        <h3 class="product-name" th:text="${item.product.name}">Nazwa produktu</h3>
+                        <p class="product-meta">
+                            <span th:if="${item.product.brand != null}" th:text="${item.product.brand.name}">Marka</span>
+                        </p>
+                    </div>
+
+                    <div class="product-pricing">
+                        <div class="product-price"
+                             th:text="${#numbers.formatDecimal(item.price, 1, 2)} + ' ' + #{general.currency}">
+                            59.99 zł
+                        </div>
+                        <div class="product-quantity">
+                            <span th:text="#{order.details.quantity}">Ilość</span>: <span th:text="${item.quantity}">2</span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <div>
+            <div class="sidebar-section">
+                <h2 class="section-title" th:text="#{order.details.summary}">Podsumowanie</h2>
+
+                <div class="summary-row">
+                    <span class="summary-label" th:text="#{order.details.subtotal}">Wartość produktów</span>
+                    <span class="summary-value"
+                          th:text="${#numbers.formatDecimal(order.subtotal, 1, 2)} + ' ' + #{general.currency}">
+                        119.98 zł
+                    </span>
+                </div>
+
+                <div class="summary-row" th:if="${order.deliveryCost != null and order.deliveryCost > 0}">
+                    <span class="summary-label" th:text="#{order.details.delivery.cost}">Dostawa</span>
+                    <span class="summary-value"
+                          th:text="${#numbers.formatDecimal(order.deliveryCost, 1, 2)} + ' ' + #{general.currency}">
+                        15.00 zł
+                    </span>
+                </div>
+
+                <div class="summary-row total">
+                    <span class="summary-label" th:text="#{order.details.total}">Razem</span>
+                    <span class="summary-value total"
+                          th:text="${#numbers.formatDecimal(order.totalAmount, 1, 2)} + ' ' + #{general.currency}">
+                        134.98 zł
+                    </span>
+                </div>
+            </div>
+
+            <div class="sidebar-section" th:if="${order.shippingAddress != null}">
+                <h2 class="section-title" th:text="#{order.details.shipping}">Adres dostawy</h2>
+                <div class="address-info">
+                    <p class="address-title"
+                       th:text="${order.guestOrder ? order.guestName : order.user.getFullName()}">Jan Kowalski</p>
+                    <p th:text="${order.shippingAddress.street}">ul. Przykładowa 123</p>
+                    <p>
+                        <span th:text="${order.shippingAddress.zipCode}">00-000</span>
+                        <span th:text="${order.shippingAddress.city}">Warszawa</span>
+                    </p>
+                    <p th:if="${order.shippingAddress.country != null}">
+                        <span th:text="${order.shippingAddress.country}">Polska</span>
+                    </p>
+                    <p th:if="${order.guestOrder and order.guestPhone != null}">
+                        Tel: <span th:text="${order.guestPhone}">+48 123 456 789</span>
+                    </p>
+                    <p th:if="${order.guestOrder and order.guestEmail != null}">
+                        Email: <span th:text="${order.guestEmail}">email@example.com</span>
+                    </p>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="action-buttons">
+                    <a th:href="@{/account/orders}" class="btn-outline">
+                        ← <span th:text="#{order.details.back}">Powrót do zamówień</span>
+                    </a>
+                </div>
+
+                <form th:if="${order.canBeCancelled()}"
+                      th:action="@{/account/orders/{id}/cancel(id=${order.id})}"
+                      method="post"
+                      style="margin-top: 10px;"
+                      th:attr="onsubmit='return confirm(\'' + #{order.details.confirm.cancel} + '\')'">
+                    <button type="submit" class="btn-cancel" style="width: 100%;">
+                        ❌ <span th:text="#{order.details.cancel}">Anuluj zamówienie</span>
+                    </button>
+                </form>
+
+                <div th:if="${!order.canBeCancelled() and order.status != T(com.example.petmarket.enums.OrderStatus).CANCELLED and order.status != T(com.example.petmarket.enums.OrderStatus).DELIVERED}"
+                     class="alert alert-warning" style="margin-top: 15px;">
+                    <p style="margin: 0; font-size: 14px;">
+                        ⏰ <span th:text="#{order.details.cannot.cancel}">Upłynął termin anulowania zamówienia</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

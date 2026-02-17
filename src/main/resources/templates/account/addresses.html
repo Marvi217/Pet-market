@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="#{addresses.title}">Adresy dostawy - PetMarket</title>
+    <link rel="stylesheet" href="/css/account-styles.css">
+    <link rel="stylesheet" href="/css/public-styles.css">
+    <style>
+        .content-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 15px; }
+        .btn-add { padding: 12px 24px; background: var(--brand-green); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.3s; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-add:hover { background: #1e4230; transform: translateY(-1px); }
+        .addresses-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+        .address-card { background: white; border: 2px solid #eee; border-radius: 12px; padding: 25px; transition: all 0.3s; position: relative; }
+        .address-card:hover { box-shadow: 0 4px 15px rgba(0,0,0,0.08); transform: translateY(-2px); }
+        .address-card.default { border-color: var(--brand-green); background: var(--brand-light); }
+        .default-badge { position: absolute; top: 15px; right: 15px; background: var(--brand-green); color: white; padding: 5px 12px; border-radius: 15px; font-size: 12px; font-weight: 600; }
+        .address-name { font-size: 18px; font-weight: 700; margin: 0 0 15px 0; color: var(--text-dark); }
+        .address-details { margin-bottom: 20px; line-height: 1.6; }
+        .address-details p { margin: 5px 0; font-size: 14px; color: var(--text-dark); }
+        .address-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn-default, .btn-edit, .btn-delete { padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.3s; border: none; flex: 1; }
+        .btn-default { background: var(--brand-light); color: var(--brand-green); }
+        .btn-default:hover { background: var(--brand-green); color: white; }
+        .btn-edit { background: #dbeafe; color: #1e40af; }
+        .btn-edit:hover { background: #1e40af; color: white; }
+        .btn-delete { background: #fee2e2; color: #991b1b; }
+        .btn-delete:hover { background: #991b1b; color: white; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: white; border-radius: 15px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; }
+        .modal-header { padding: 25px 30px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .modal-title { font-size: 24px; font-weight: 700; margin: 0; color: var(--text-dark); }
+        .modal-close { background: none; border: none; font-size: 32px; color: var(--text-muted); cursor: pointer; padding: 0; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
+        .modal-close:hover { color: var(--text-dark); }
+        .modal-content form { padding: 30px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .checkbox-group { display: flex; align-items: center; gap: 10px; margin: 20px 0; }
+        .checkbox-group input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; }
+        .checkbox-group label { margin: 0; font-weight: 500; cursor: pointer; }
+        .btn-submit { width: 100%; padding: 14px; background: var(--brand-green); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer; transition: all 0.3s; }
+        .btn-submit:hover { background: #1e4230; }
+        @media (max-width: 968px) { .addresses-grid { grid-template-columns: 1fr; } .form-row { grid-template-columns: 1fr; } .content-header { flex-direction: column; align-items: flex-start; } }
+    </style>
+</head>
+<body>
+
+<div th:replace="~{fragments/header :: navbar}"></div>
+<div th:replace="~{fragments/header :: categoryBar}"></div>
+
+<div class="account-container">
+    <aside th:replace="~{fragments/account-sidebar :: sidebar('addresses')}"></aside>
+
+    <main class="account-content">
+        <div class="content-header">
+            <div>
+                <h1 class="content-title" th:text="#{addresses.header}">Adresy dostawy</h1>
+                <p class="content-subtitle" th:text="#{addresses.subtitle}">Zarządzaj swoimi adresami dostawy</p>
+            </div>
+            <button class="btn-add" onclick="openAddModal()">
+                + <span th:text="#{addresses.add}">Dodaj nowy adres</span>
+            </button>
+        </div>
+
+        <div th:if="${success}" class="alert alert-success">
+            <strong>✔</strong> <span th:text="${success}">Sukces</span>
+        </div>
+
+        <div th:if="${error}" class="alert alert-error">
+            <strong>✗</strong> <span th:text="${error}">Błąd</span>
+        </div>
+
+        <div class="addresses-grid" th:if="${!addresses.isEmpty()}">
+            <div th:each="address : ${addresses}" class="address-card"
+                 th:classappend="${address.isDefault} ? 'default' : ''">
+
+                <span th:if="${address.isDefault}" class="default-badge" th:text="#{addresses.default}">Domyślny</span>
+
+                <h3 class="address-name" th:text="${address.label}">Dom</h3>
+
+                <div class="address-details">
+                    <p><strong th:text="${address.name}">Jan Kowalski</strong></p>
+                    <p th:text="${address.street}">ul. Przykładowa 123/45</p>
+                    <p>
+                        <span th:text="${address.zipCode}">00-000</span>
+                        <span th:text="${address.city}">Warszawa</span>
+                    </p>
+                    <p th:if="${address.country}" th:text="${address.country}">Polska</p>
+                </div>
+
+                <div class="address-actions">
+                    <button th:if="${!address.isDefault}"
+                            class="btn-default"
+                            th:onclick="'setDefault(' + ${address.id} + ')'"
+                            th:text="#{addresses.set.default}">
+                        Ustaw jako domyślny
+                    </button>
+
+                    <button class="btn-edit"
+                            th:onclick="'openEditModal(' + ${address.id} + ')'"
+                            th:text="#{addresses.edit}">
+                        Edytuj
+                    </button>
+
+                    <form th:action="@{/account/addresses/{id}/delete(id=${address.id})}"
+                          method="post"
+                          style="display: inline; flex: 1;"
+                          th:attr="onsubmit='return confirm(\'' + #{addresses.confirm.delete} + '\')'">
+                        <button type="submit" class="btn-delete" style="width: 100%;" th:text="#{addresses.delete}">
+                            Usuń
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="empty-state" th:if="${addresses.isEmpty()}">
+            <div class="empty-icon">📍</div>
+            <h2 class="empty-title" th:text="#{addresses.empty}">Brak zapisanych adresów</h2>
+            <p class="empty-text" th:text="#{addresses.empty.message}">Dodaj swój pierwszy adres dostawy...</p>
+        </div>
+    </main>
+</div>
+
+<div id="addressModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title" id="modalTitle" th:text="#{addresses.modal.add.title}">Dodaj nowy adres</h2>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+
+        <form id="addressForm" th:action="@{/account/addresses/save}" method="post">
+            <input type="hidden" id="addressId" name="id">
+
+            <div class="form-group">
+                <label for="label" th:text="#{addresses.label} + ' *'">Nazwa adresu *</label>
+                <input type="text" id="label" name="label" class="form-control"
+                       th:placeholder="#{addresses.label.placeholder}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="name" th:text="#{addresses.name} + ' *'">Imię i nazwisko *</label>
+                <input type="text" id="name" name="name" class="form-control"
+                       th:placeholder="#{addresses.name.placeholder}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="street" th:text="#{addresses.street} + ' *'">Ulica i numer *</label>
+                <input type="text" id="street" name="street" class="form-control"
+                       th:placeholder="#{addresses.street.placeholder}" required>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="zipCode" th:text="#{addresses.zipcode} + ' *'">Kod pocztowy *</label>
+                    <input type="text" id="zipCode" name="zipCode" class="form-control"
+                           th:placeholder="#{addresses.zipcode.placeholder}" pattern="[0-9]{2}-[0-9]{3}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="city" th:text="#{addresses.city} + ' *'">Miasto *</label>
+                    <input type="text" id="city" name="city" class="form-control"
+                           th:placeholder="#{addresses.city.placeholder}" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="country" th:text="#{addresses.country}">Kraj</label>
+                <input type="text" id="country" name="country" class="form-control"
+                       th:placeholder="#{addresses.country.default}" th:value="#{addresses.country.default}">
+            </div>
+
+            <div class="checkbox-group">
+                <input type="checkbox" id="isDefault" name="isDefault">
+                <label for="isDefault" th:text="#{addresses.set.default.checkbox}">Ustaw jako domyślny adres dostawy</label>
+            </div>
+
+            <div style="margin-top: 25px;">
+                <button type="submit" class="btn-submit" th:text="#{addresses.save}">Zapisz adres</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    const messages = {
+        addTitle: /*[[#{addresses.modal.add.title}]]*/ 'Dodaj nowy adres',
+        editTitle: /*[[#{addresses.modal.edit.title}]]*/ 'Edytuj adres',
+        confirmDefault: /*[[#{addresses.set.default}]]*/ 'Czy chcesz ustawić ten adres jako domyślny?',
+        errorFetch: 'Nie udało się pobrać danych adresu',
+        defaultCountry: /*[[#{addresses.country.default}]]*/ 'Polska'
+    };
+
+    function openAddModal() {
+        document.getElementById('modalTitle').textContent = messages.addTitle;
+        document.getElementById('addressForm').reset();
+        document.getElementById('addressId').value = '';
+        document.getElementById('country').value = messages.defaultCountry;
+        document.getElementById('addressModal').classList.add('active');
+    }
+
+    function openEditModal(id) {
+        document.getElementById('modalTitle').textContent = messages.editTitle;
+        document.getElementById('addressId').value = id;
+
+        fetch('/account/addresses/' + id)
+            .then(response => response.json())
+            .then(address => {
+                document.getElementById('label').value = address.label;
+                document.getElementById('name').value = address.name;
+                document.getElementById('street').value = address.street;
+                document.getElementById('zipCode').value = address.zipCode;
+                document.getElementById('city').value = address.city;
+                document.getElementById('country').value = address.country || messages.defaultCountry;
+                document.getElementById('isDefault').checked = address.default;
+
+                document.getElementById('addressModal').classList.add('active');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert(messages.errorFetch);
+            });
+    }
+
+    function closeModal() {
+        document.getElementById('addressModal').classList.remove('active');
+    }
+
+    function setDefault(id) {
+        if (confirm(messages.confirmDefault)) {
+            fetch('/account/addresses/' + id + '/set-default', {
+                method: 'POST'
+            })
+                .then(response => {
+                    if (response.ok) {
+                        location.reload();
+                    }
+                });
+        }
+    }
+
+    document.getElementById('addressModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeModal();
+        }
+    });
+</script>
+
+</body>
+</html>

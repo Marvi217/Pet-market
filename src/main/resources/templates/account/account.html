@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="#{account.dashboard} + ' - PetMarket'">Moje konto - PetMarket</title>
+    <link rel="stylesheet" href="/css/public-styles.css">
+    <link rel="stylesheet" href="/css/account-styles.css">
+    <style>
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .content-header-left {
+            flex: 1;
+        }
+
+        .user-info-card {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            background: white;
+            padding: 20px 25px;
+            border-radius: 15px;
+            border: 1px solid #eee;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .user-avatar {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--brand-green) 0%, #1e4230 100%);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .user-details h3 {
+            margin: 0 0 5px 0;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .user-details p {
+            margin: 0;
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            border: 1px solid #eee;
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            transform: translateY(-2px);
+        }
+
+        .stat-icon {
+            font-size: 36px;
+            margin-bottom: 12px;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: var(--brand-green);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            font-size: 22px;
+            font-weight: 700;
+            margin: 0;
+            color: var(--text-dark);
+        }
+
+        .order-items {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .order-item-image {
+            width: 70px;
+            height: 70px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 35px;
+        }
+
+        .order-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        @media (max-width: 968px) {
+            .content-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .user-info-card {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+<div th:replace="~{fragments/header :: navbar}"></div>
+<div th:replace="~{fragments/header :: categoryBar}"></div>
+
+<div class="account-container">
+
+    <aside th:replace="~{fragments/account-sidebar :: sidebar('dashboard')}"></aside>
+
+    <div class="account-content">
+
+        <div class="content-header">
+            <div class="content-header-left">
+                <h1 class="content-title">
+                    <span th:text="#{account.welcome}">Witaj ponownie</span>,
+                    <span th:text="${#strings.arraySplit(user.getFirstName(), ' ')[0]}"></span>! 👋
+                </h1>
+                <p class="content-subtitle" th:text="#{account.activity.summary}">
+                    Oto podsumowanie Twojej aktywności w PetMarket
+                </p>
+            </div>
+
+            <div class="user-info-card">
+                <div class="user-avatar" th:text="${#strings.substring(user.getFirstName(), 0, 1)}">U</div>
+                <div class="user-details">
+                    <h3 th:text="${user.getFullName()}">Jan Kowalski</h3>
+                    <p th:text="${user.email}">jan@example.com</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">📦</div>
+                <div class="stat-value" th:text="${orderStats.total}">0</div>
+                <div class="stat-label" th:text="#{account.orders.total}">Zamówienia</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">💰</div>
+                <div class="stat-value"
+                     th:text="${#numbers.formatDecimal(orderStats.totalSpent, 1, 2)} + ' ' + #{general.currency}">
+                    0.00 zł
+                </div>
+                <div class="stat-label" th:text="#{account.spent}">Wydane</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">❤️</div>
+                <div class="stat-value" th:text="${wishlistCount}">0</div>
+                <div class="stat-label" th:text="#{account.wishlist}">Ulubione produkty</div>
+            </div>
+        </div>
+
+        <div class="orders-section">
+            <div class="section-header">
+                <h2 class="section-title" th:text="#{account.recent.orders}">Ostatnie zamówienia</h2>
+                <a th:href="@{/account/orders}" class="btn-outline"
+                   style="text-decoration: none;" th:text="#{account.view.all}">
+                    Zobacz wszystkie
+                </a>
+            </div>
+
+            <div th:if="${not #lists.isEmpty(recentOrders)}">
+                <div th:each="order : ${recentOrders}" class="order-card">
+                    <div class="order-header">
+                        <div class="order-info">
+                            <div class="order-info-item">
+                                <span class="order-label" th:text="#{account.order.number}">Nr zamówienia</span>
+                                <span class="order-value" th:text="${order.orderNumber}">#PET-000</span>
+                            </div>
+                            <div class="order-info-item">
+                                <span class="order-label" th:text="#{account.order.date}">Data</span>
+                                <span class="order-value"
+                                      th:text="${#temporals.format(order.orderDate, 'dd MMMM yyyy')}">
+                                    1 stycznia 2025
+                                </span>
+                            </div>
+                        </div>
+                        <span th:class="'order-status ' + ${'status-' + #strings.toLowerCase(order.status)}"
+                              th:text="${order.statusDisplay}">W realizacji</span>
+                    </div>
+
+                    <div class="order-items">
+                        <div th:each="item, iter : ${order.items}" th:if="${iter.index < 3}" class="order-item-image">
+                            <span th:text="${item.productIcon}">📦</span>
+                        </div>
+                        <span th:if="${#lists.size(order.items) > 3}"
+                              th:text="'+' + (${#lists.size(order.items)} - 3) + ' więcej'"
+                              style="color: var(--text-muted); align-self: center;"></span>
+                    </div>
+
+                    <div class="order-footer">
+                        <div class="order-total"
+                             th:text="${#numbers.formatDecimal(order.totalAmount, 1, 2)} + ' ' + #{general.currency}">
+                            0.00 zł
+                        </div>
+                        <div class="order-actions">
+                            <a th:href="@{/account/orders/{id}(id=${order.id})}"
+                               class="btn-outline" th:text="#{account.order.details}">
+                                Szczegóły
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div th:if="${#lists.isEmpty(recentOrders)}" class="empty-state">
+                <div class="empty-icon">📦</div>
+                <p class="empty-text" th:text="#{account.empty.orders}">Nie masz jeszcze żadnych zamówień.</p>
+                <a th:href="@{/}" class="btn-primary" th:text="#{account.go.shop}">Przejdź do sklepu</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
